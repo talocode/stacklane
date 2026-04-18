@@ -375,3 +375,162 @@ Dashboard/CLI -> Public API -> Functions Service
 - Usage event integrity for billing trust
 - Audit logging for sensitive operations
 - Backup and restore viability
+
+## Current Repository Implementation Snapshot (April 2026)
+Current code in this repository provides an MVP control-plane admin slice focused on organizations and projects.
+
+Implemented in code:
+- `apps/api` (Node HTTP server):
+  - `GET/POST /organizations`
+  - `GET /organizations/:idOrSlug`
+  - `GET/POST /projects`
+  - `GET /projects/:idOrSlug`
+  - `PATCH /projects/:idOrSlug`
+  - structured error responses and validation handling
+- `apps/web` (Next.js):
+  - Console-style shell and nav system
+  - Wired organization/project pages using API client calls
+  - Structured infrastructure area placeholders for deferred runtime services
+
+Local persistence note:
+- `apps/api/data/control-plane.json` is a development persistence mechanism for local iteration only.
+- Production-grade control-plane persistence should migrate to Postgres with forward-only migrations.
+
+## Control-Plane Persistence Baseline (Phase 1.1)
+Stacklane now uses PostgreSQL as the control-plane persistence layer for local development and MVP API workflows.
+
+### Implemented schema domains
+- `users`
+- `organizations`
+- `organization_members`
+- `projects`
+- `environments`
+- `api_keys` (scaffold)
+- `billing_accounts` (scaffold)
+- `audit_events`
+
+### Migration model
+- Forward-only SQL migrations in `apps/api/migrations`
+- Migration runner script: `apps/api/scripts/migrate.mjs`
+- Applied migration tracking table: `schema_migrations`
+
+### Local infrastructure
+- PostgreSQL via Docker Compose: `infra/docker/docker-compose.yml`
+- API migrations + seed scripts provide first-run bootstrapping
+
+### API layering
+`apps/api/src` is organized into:
+- `repositories/` (data-access queries)
+- `services/` (response mapping)
+- `bootstrap/` (initial seed-on-empty behavior)
+- `server.ts` (HTTP routing + validation + orchestration)
+
+This keeps boundaries simple while avoiding premature service extraction.
+
+## Control-Plane Auth/Authorization Baseline (Phase 1.2)
+Stacklane now enforces an operator authentication boundary for dashboard/API access.
+
+### Auth/session model
+- Operator login endpoint: `POST /auth/login`
+- Session inspection endpoint: `GET /auth/me`
+- Logout endpoint: `POST /auth/logout`
+- Session transport: HTTP-only cookie (`sl_session`)
+- Session storage: `control_plane_sessions` table stores only hashed session token
+- Password storage: salted scrypt hash in `users.password_hash`
+
+### Authorization model
+- Membership-scoped access via `organization_members`
+- Roles currently supported: `owner`, `admin`, `member`
+- Organizations/projects/environments/api-keys/events are filtered/enforced by current user membership
+
+### API key lifecycle model
+- API keys are project-scoped
+- Raw key secret is generated once and returned only at creation
+- Database stores key hash + prefix, never raw secret
+- Revoke operation marks key status + revoked timestamp
+
+### Audit coverage baseline
+Audit events include actor and metadata for:
+- auth login/logout
+- organization create
+- project create/update
+- environment create/update
+- api key create/revoke
+
+## Provisioning Orchestration Baseline (Phase 1.3)
+Stacklane now includes a first real control-plane provisioning orchestration layer.
+
+### Domain model
+- `regions`: controlled region catalog for deployment targets.
+- `provisioning_tasks`: lifecycle unit for a project provisioning request.
+- `provisioning_attempts`: per-task attempt history and diagnostics.
+- `project_runtime_bindings`: recorded runtime references for provisioned project resources.
+
+### Lifecycle model
+Current task statuses:
+- `queued`
+- `running`
+- `retrying`
+- `ready`
+- `failed`
+
+### Execution model
+- Request API writes a provisioning task.
+- In-process worker loop polls runnable tasks.
+- Orchestrator transitions state and records attempts.
+- Adapter boundary executes provisioning steps.
+- Mock adapter simulates allocation for:
+  - database reference
+  - storage reference
+  - auth namespace reference
+  - functions namespace reference
+
+### Adapter boundary
+Provisioning logic is separated from execution via `ProvisioningAdapter` interface. The current implementation uses `MockProvisioningAdapter`, allowing future replacement with real runtime adapters without rewriting orchestration flow.
+
+### API surface
+- `POST /projects/:idOrSlug/provision`
+- `GET /projects/:idOrSlug/provisioning`
+- `GET /projects/:idOrSlug/provisioning/tasks`
+- `POST /projects/:idOrSlug/provisioning/retry`
+- `GET /regions`
+
+### Audit coverage
+Provisioning-related events emitted:
+- `provisioning.requested`
+- `provisioning.started`
+- `provisioning.succeeded`
+- `provisioning.failed`
+- `provisioning.retried`
+
+## Control-Plane Hardening Notes (Phase 1.4)
+
+### Permission model
+A centralized policy layer (`policy.ts`) enforces owner/admin/member behavior for mutating actions.
+- owner/admin: provisioning triggers/retries, API key lifecycle mutations, environment mutations, project update
+- member: scoped read-only surfaces
+
+### Worker safety + scheduling
+Provisioning tasks now carry scheduling and lease metadata:
+- `next_run_at`
+- `claimed_by`
+- `claimed_at`
+- `claim_expires_at`
+- `last_heartbeat_at`
+- `last_transition_at`
+
+Worker execution model:
+- claims runnable tasks via DB update lease
+- executes only tasks whose schedule is due
+- records transition timestamps and attempt diagnostics
+- applies stepped retry backoff before retrying
+
+### Operations visibility
+Organization-level operations API and page expose project provisioning fleet view with status, region, error context, and last update timestamps.
+
+### Test strategy
+Current test baseline focuses on correctness-critical control-plane semantics:
+- policy matrix checks
+- provisioning transition validity
+- retry backoff behavior
+- response contract checks for scheduling/lease metadata
