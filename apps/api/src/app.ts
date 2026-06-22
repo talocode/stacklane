@@ -8,6 +8,7 @@ import { organizationsRoutes } from "./modules/organizations/routes";
 import { projectsRoutes } from "./modules/projects/routes";
 import { tokenRoutes } from "./modules/tokens/routes";
 import { databaseConnectionRoutes } from "./modules/database-connections/routes";
+import { databaseTestRoutes } from "./modules/database-connections/test-route";
 import { auditRoutes } from "./modules/audit/routes";
 
 export type BuildAppOptions = {
@@ -68,6 +69,7 @@ export const buildApp = async (options: BuildAppOptions) => {
   await app.register(projectsRoutes);
   await app.register(tokenRoutes);
   await app.register(databaseConnectionRoutes);
+  await app.register(databaseTestRoutes);
   await app.register(auditRoutes);
 
   return app;

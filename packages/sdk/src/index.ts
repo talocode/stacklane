@@ -61,6 +61,11 @@ export function createStacklaneClient(options: StacklaneClientOptions) {
       async get(projectId: string) {
         return request<{ database: any }>(`/v1/projects/${projectId}/database`);
       },
+      async test(projectId: string) {
+        return request<{ result: { ok: boolean; status: string; message: string; latencyMs?: number } }>(
+          `/v1/projects/${projectId}/database/test`, 'POST'
+        );
+      },
     },
 
     tokens: {
