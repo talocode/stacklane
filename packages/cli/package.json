@@ -1,0 +1,20 @@
+{
+  "name": "@stacklane/cli",
+  "version": "0.2.0",
+  "description": "Stacklane CLI for project and token management",
+  "main": "dist/index.js",
+  "bin": {
+    "stacklane": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.7.3"
+  }
+}
