@@ -1,117 +1,77 @@
 # Stacklane
 
-Stacklane is a Nigeria-first, Africa-aware backend platform focused on helping teams ship production backends quickly with a reliable control plane.
+**Lightweight backend/database layer for builders and developers.**
 
-## Current MVP Control-Plane Implementation
-Stacklane currently runs as two apps:
+Stacklane provides project management, access tokens, database connection storage, and audit logging — the core primitives you need to ship backend features without heavy infrastructure overhead.
 
-- `apps/api` — TypeScript control-plane API backed by PostgreSQL
-- `apps/web` — Next.js operator console
+## Quick Start
 
-Implemented now:
-- operator auth/session boundary (email/password login, session cookie, logout, current-user)
-- organization/project membership-scoped access
-- organizations, projects, environments, API keys, audit events
-- provisioning orchestration foundation:
-  - async provisioning tasks and attempts
-  - retry/failure modeling
-  - region catalog
-  - runtime binding records
-  - mock provisioning adapter + in-process worker loop
-- forward-only Postgres migrations + seed/bootstrap flow
-
-## Provisioning model (current phase)
-Provisioning lifecycle states:
-- `queued`
-- `running`
-- `retrying`
-- `ready`
-- `failed`
-
-Key runtime tables:
-- `provisioning_tasks`
-- `provisioning_attempts`
-- `project_runtime_bindings`
-- `regions`
-
-Provisioning endpoints:
-- `POST /projects/:idOrSlug/provision`
-- `GET /projects/:idOrSlug/provisioning`
-- `GET /projects/:idOrSlug/provisioning/tasks`
-- `POST /projects/:idOrSlug/provisioning/retry`
-- `GET /regions`
-
-## Security model (current)
-- Control-plane only auth (not app end-user auth)
-- Passwords are hashed (scrypt)
-- Session cookie (`sl_session`) stores opaque token; DB stores only token hash
-- API keys store only hashed secret; raw secret is returned once at key creation
-
-## Local development
-### 1) Start Postgres
 ```bash
-cd infra/docker
-docker compose up -d
+# Initialize
+npx stacklane init
+
+# Create a project
+npx stacklane project create -n "My App"
+
+# Generate access token
+npx stacklane token create -n "api-key"
+
+# Set database connection
+npx stacklane db set -u "postgresql://..." -p "secret"
+
+# Generate environment file
+npx stacklane env generate
 ```
 
-### 2) Prepare API
-```bash
-cd apps/api
-cp .env.example .env
-npm install
-DATABASE_URL=postgres://stacklane:stacklane@localhost:5432/stacklane npm run migrate
-DATABASE_URL=postgres://stacklane:stacklane@localhost:5432/stacklane npm run seed
-```
+## v0.1.0 Features
 
-### 3) Start API (includes provisioning worker loop)
-```bash
-cd apps/api
-DATABASE_URL=postgres://stacklane:stacklane@localhost:5432/stacklane WEB_ORIGIN=http://localhost:3000 npm run dev
-```
+- Project creation and management
+- Access token generation, verification, and revocation
+- Database connection storage
+- Audit event logging
+- Health endpoint
+- JSON-only API responses
 
-### 4) Start web
-```bash
-cd apps/web
-npm install
-NEXT_PUBLIC_API_BASE_URL=http://localhost:4000 npm run dev
-```
+## v0.2.0 Features
 
-Open `http://localhost:3000/signin` and sign in with seeded operator account:
-- email: `admin@stacklane.local`
-- password: `stacklane-admin`
+- CLI (`stacklane`)
+- TypeScript SDK (`@stacklane/sdk`)
+- Environment file generator
+- Local config backup
+- Token verification
 
-## What is intentionally deferred
-- real managed Postgres clusters / storage runtime / function runtime
-- end-user auth for apps built on Stacklane
-- billing provider integration
-- advanced RBAC, SSO, MFA
-- distributed queue infrastructure beyond current in-process worker baseline
+## API Endpoints
 
-## Control-plane role policy
-Current roles: `owner`, `admin`, `member`.
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/v1/projects` | Create project |
+| GET | `/v1/projects` | List projects |
+| GET | `/v1/projects/:id` | Get project |
+| POST | `/v1/projects/:id/database` | Set database connection |
+| GET | `/v1/projects/:id/database` | Get database info |
+| POST | `/v1/projects/:id/tokens` | Create access token |
+| POST | `/v1/tokens/verify` | Verify access token |
+| POST | `/v1/projects/:id/tokens/:tokenId/revoke` | Revoke token |
+| GET | `/v1/projects/:id/audit` | List audit events |
 
-Mutation policy baseline:
-- `owner` / `admin`: project provisioning trigger/retry, API key create/revoke, environment create/update, project update
-- `member`: read-only access to scoped organizations/projects and operational status surfaces
+## Security Model
 
-Policy logic is centralized in `apps/api/src/policy.ts` and enforced at API route boundaries.
+- Access tokens are hashed before storage (SHA-256)
+- Raw tokens shown only at creation time
+- Database passwords stored as references, not in logs
+- All API responses are JSON-only
+- Audit events logged for all state changes
 
-## Provisioning retry + worker safety model
-- Retry scheduling uses `next_run_at` with stepped backoff.
-- Worker claims tasks with lease metadata (`claimed_by`, `claim_expires_at`) to reduce duplicate processing risk.
-- Worker only picks runnable tasks where `next_run_at <= now()` and lease is free/expired.
-- Failed tasks become terminal (`failed`) after `max_attempts`; manual retry endpoint is required to requeue.
+## Limitations (v0.2.0)
 
-## Tests
-API test harness currently includes deterministic tests for:
-- policy and permission matrix
-- provisioning state transition rules
-- retry backoff behavior
-- provisioning formatter scheduling/lease contract
+- No production multi-tenant auth
+- No realtime subscriptions
+- No file storage buckets
+- No billing integration
+- No automatic database provisioning
+- No vector database
 
-Run API tests:
-```bash
-cd apps/api
-npm install
-npm run test
-```
+## License
+
+MIT
