@@ -229,4 +229,100 @@ program
     console.log(`  Sensitive values redacted in backup.`);
   });
 
+program
+  .command('customer create')
+  .description('Create an API customer')
+  .option('-n, --name <name>', 'Customer name')
+  .option('-e, --email <email>', 'Customer email')
+  .action((opts) => {
+    ensureStacklaneDir();
+    const config = loadConfig();
+    const id = generateId('cust');
+    const customers = config.customers || [];
+    customers.push({ id, name: opts.name || 'Customer', email: opts.email, projectId: config.projectId, createdAt: new Date().toISOString() });
+    config.customers = customers;
+    saveConfig(config);
+    console.log(`✓ Customer created: ${opts.name || 'Customer'}`);
+    console.log(`  ID: ${id}`);
+  });
+
+program
+  .command('customer list')
+  .description('List API customers')
+  .action(() => {
+    const config = loadConfig();
+    const customers = config.customers || [];
+    if (customers.length === 0) { console.log('  No customers found.'); return; }
+    for (const c of customers) console.log(`  - ${c.name} (${c.id})`);
+  });
+
+program
+  .command('customer key create')
+  .description('Create a customer API key')
+  .option('-c, --customer <id>', 'Customer ID')
+  .option('-n, --name <name>', 'Key name', 'default')
+  .action((opts) => {
+    ensureStacklaneDir();
+    const config = loadConfig();
+    const rawKey = 'sk_lane_customer_' + crypto.randomBytes(48).toString('base64url');
+    const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+    const keys = config.customerKeys || [];
+    keys.push({ id: generateId('ckey'), customerId: opts.customer, name: opts.name, hash: keyHash, createdAt: new Date().toISOString() });
+    config.customerKeys = keys;
+    saveConfig(config);
+    console.log(`✓ Customer API key created: ${opts.name}`);
+    console.log(`  Key: ${rawKey}`);
+    console.log(`\n⚠ Store this key securely. It will not be shown again.`);
+  });
+
+program
+  .command('usage summary')
+  .description('Show usage summary')
+  .action(() => {
+    const config = loadConfig();
+    const events = config.usageEvents || [];
+    console.log(`  Total events: ${events.length}`);
+    const byType: Record<string, number> = {};
+    for (const e of events) { byType[e.eventType] = (byType[e.eventType] || 0) + 1; }
+    for (const [type, count] of Object.entries(byType)) console.log(`  ${type}: ${count}`);
+  });
+
+program
+  .command('file upload')
+  .description('Upload a file')
+  .option('-f, --file <path>', 'File to upload')
+  .option('-n, --name <name>', 'File name')
+  .action((opts) => {
+    ensureStacklaneDir();
+    if (!opts.file || !fs.existsSync(opts.file)) { console.error('✗ File not found'); process.exit(1); }
+    const buffer = fs.readFileSync(opts.file);
+    const filename = opts.name || path.basename(opts.file);
+    const id = generateId('file');
+    const storageKey = `${Date.now()}-${id}-${filename}`;
+    const storageDir = path.join(STACKLANE_DIR, 'files');
+    fs.mkdirSync(storageDir, { recursive: true });
+    fs.writeFileSync(path.join(storageDir, storageKey), buffer);
+    console.log(`✓ File uploaded: ${filename}`);
+    console.log(`  ID: ${id}`);
+    console.log(`  Size: ${buffer.length} bytes`);
+    console.log(`  Storage key: ${storageKey}`);
+  });
+
+program
+  .command('file list')
+  .description('List uploaded files')
+  .action(() => {
+    const storageDir = path.join(STACKLANE_DIR, 'files');
+    if (!fs.existsSync(storageDir)) { console.log('  No files uploaded.'); return; }
+    const files = fs.readdirSync(storageDir);
+    for (const f of files) console.log(`  - ${f}`);
+  });
+
+program
+  .command('asset list')
+  .description('List assets')
+  .action(() => {
+    console.log('  No assets yet. Create assets via API: POST /v1/projects/:id/assets');
+  });
+
 program.parse();

@@ -68,7 +68,11 @@ export const buildApp = async (options: BuildAppOptions) => {
   await app.register(projectsRoutes);
   await app.register(tokenRoutes);
   await app.register(databaseConnectionRoutes);
+  await app.register(databaseTestRoutes);
   await app.register(auditRoutes);
+  await app.register(customerRoutes);
+  await app.register(fileRoutes);
+  await app.register(assetRoutes);
 
   return app;
 };

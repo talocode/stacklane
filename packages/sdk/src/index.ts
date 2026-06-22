@@ -80,6 +80,57 @@ export function createStacklaneClient(options: StacklaneClientOptions) {
         return request<{ events: any[] }>(`/v1/projects/${projectId}/audit?limit=${limit}`);
       },
     },
+
+    customers: {
+      async create(data: { projectId: string; name: string; email?: string }) {
+        return request<{ customer: any }>('/v1/customers', 'POST', data);
+      },
+      async list(projectId: string) {
+        return request<{ customers: any[] }>(`/v1/customers?projectId=${projectId}`);
+      },
+    },
+
+    apiKeys: {
+      async createCustomerKey(data: { customerId: string; name: string; scopes?: string[] }) {
+        return request<{ key: any; rawKey: string }>('/v1/customers/api-keys', 'POST', data);
+      },
+      async verifyCustomerKey(key: string) {
+        return request<{ valid: boolean; prefix: string }>('/v1/customers/api-keys/verify', 'POST', { key });
+      },
+    },
+
+    usage: {
+      async record(data: { projectId: string; customerId?: string; eventType: string; units?: number; metadata?: Record<string, unknown> }) {
+        return request<{ ok: boolean }>('/v1/usage', 'POST', data);
+      },
+    },
+
+    files: {
+      async upload(projectId: string, data: { name?: string; mimeType: string; data: string; visibility?: string }) {
+        return request<{ file: any }>(`/v1/projects/${projectId}/files`, 'POST', data);
+      },
+      async list(projectId: string) {
+        return request<{ files: any[] }>(`/v1/projects/${projectId}/files`);
+      },
+      async get(projectId: string, fileId: string) {
+        return request<{ file: any }>(`/v1/projects/${projectId}/files/${fileId}`);
+      },
+      async download(projectId: string, fileId: string) {
+        return request<any>(`/v1/projects/${projectId}/files/${fileId}/download`);
+      },
+    },
+
+    assets: {
+      async create(projectId: string, data: { type: string; format?: string; metadata?: Record<string, unknown> }) {
+        return request<{ asset: any }>(`/v1/projects/${projectId}/assets`, 'POST', data);
+      },
+      async list(projectId: string) {
+        return request<{ assets: any[] }>(`/v1/projects/${projectId}/assets`);
+      },
+      async get(projectId: string, assetId: string) {
+        return request<{ asset: any }>(`/v1/projects/${projectId}/assets/${assetId}`);
+      },
+    },
   };
 }
 
