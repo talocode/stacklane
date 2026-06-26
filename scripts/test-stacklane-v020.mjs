@@ -79,7 +79,7 @@ assert(readme.includes('MIT'), 'README has license')
 
 const apiDocs = fs.readFileSync('docs/API.md', 'utf-8')
 assert(apiDocs.includes('/health'), 'API docs have health endpoint')
-assert(apiDocs.includes('/v1/projects'), 'API docs have projects endpoint')
+assert(apiDocs.includes('/v1/projects') || apiDocs.includes('/v1/projects/:id/tokens'), 'API docs have projects endpoint')
 assert(apiDocs.includes('/v1/tokens/verify'), 'API docs have token verify')
 assert(apiDocs.includes('Bearer'), 'API docs show auth pattern')
 
@@ -107,12 +107,12 @@ assert(noSupabaseCopy, 'No Supabase replacement claims')
 // Test 8: Package versions
 console.log('\n8. Package Versions')
 const corePkg = JSON.parse(fs.readFileSync('packages/core/package.json', 'utf-8'))
-assert(corePkg.version === '0.4.0', 'Core version is 0.2.0')
+assert(corePkg.version === '0.4.0', 'Core version is 0.4.0')
 
 const sdkPkg = JSON.parse(fs.readFileSync('packages/sdk/package.json', 'utf-8'))
-assert(sdkPkg.version === '0.4.0', 'SDK version is 0.2.0')
+assert(sdkPkg.version === '0.4.0', 'SDK version is 0.4.0')
 
-assert(cliPkg.version === '0.4.0', 'CLI version is 0.2.0')
+assert(cliPkg.version === '0.4.0', 'CLI version is 0.4.0')
 
 console.log(`\n=== Results: ${passed} passed, ${failed} failed ===\n`)
 process.exit(failed > 0 ? 1 : 0)

@@ -1,0 +1,6 @@
+{
+  "customer": { "name": "ClipLoop Demo", "status": "active" },
+  "apiKey": { "mode": "dev", "name": "cliploop-dev" },
+  "usageEvent": { "product": "cliploop", "action": "video.export", "units": 1 },
+  "asset": { "product": "cliploop", "filename": "shorts-export.mp4", "contentType": "video/mp4" }
+}

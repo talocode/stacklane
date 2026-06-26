@@ -1,0 +1,6 @@
+{
+  "customer": { "name": "WorkLane Demo", "status": "active" },
+  "apiKey": { "mode": "dev", "name": "worklane-agent" },
+  "usageEvent": { "product": "worklane", "action": "automation.run", "units": 5 },
+  "asset": { "product": "worklane", "filename": "handoff.json", "contentType": "application/json" }
+}

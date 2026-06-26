@@ -39,7 +39,71 @@ export function createStacklaneClient(options: StacklaneClientOptions) {
 
   return {
     async health() {
-      return request<{ status: string; service: string }>('/health');
+      return request<{ ok: boolean; service: string; version?: string }>('/api/v1/health');
+    },
+
+    async configStatus() {
+      return request<{ ok: boolean; config: unknown }>('/api/v1/config/status');
+    },
+
+    async createCustomer(data: { name: string; email?: string; externalRef?: string; status?: 'active' | 'suspended' | 'deleted' }) {
+        return request<{ ok: boolean; customer: any }>('/api/v1/customers', 'POST', data)
+    },
+
+    async listCustomers() {
+        return request<{ ok: boolean; customers: any[] }>('/api/v1/customers')
+    },
+
+    async getCustomer(customerId: string) {
+        return request<{ ok: boolean; customer: any }>(`/api/v1/customers/${customerId}`)
+    },
+
+    async updateCustomer(customerId: string, data: Record<string, unknown>) {
+        return request<{ ok: boolean; customer: any }>(`/api/v1/customers/${customerId}`, 'PATCH', data)
+    },
+
+    async createApiKey(data: { customerId: string; name: string; scopes?: string[]; mode?: 'dev' | 'live' }) {
+        return request<{ ok: boolean; apiKey: any; warning: string }>('/api/v1/api-keys', 'POST', data)
+    },
+
+    async listApiKeys(customerId?: string) {
+      const suffix = customerId ? `?customerId=${encodeURIComponent(customerId)}` : ''
+      return request<{ ok: boolean; apiKeys: any[] }>(`/api/v1/api-keys${suffix}`)
+    },
+
+    async revokeApiKey(apiKeyId: string) {
+      return request<{ ok: boolean; apiKey: any }>(`/api/v1/api-keys/${apiKeyId}/revoke`, 'POST')
+    },
+
+    async recordUsageEvent(data: { product: string; action: string; units: number; metadata?: Record<string, unknown> }) {
+      return request<{ ok: boolean; event: any }>('/api/v1/usage/events', 'POST', data)
+    },
+
+    async listUsageEvents(query?: Record<string, string>) {
+      const suffix = query ? `?${new URLSearchParams(query).toString()}` : ''
+      return request<{ ok: boolean; events: any[] }>(`/api/v1/usage/events${suffix}`)
+    },
+
+    async summarizeUsage(query?: Record<string, string>) {
+      const suffix = query ? `?${new URLSearchParams(query).toString()}` : ''
+      return request<{ ok: boolean; summary: any; byCustomer: any; byProduct: any; byAction: any }>(`/api/v1/usage/summary${suffix}`)
+    },
+
+    async createAsset(data: { product: string; filename: string; contentType: string; bytesBase64?: string; publicUrl?: string; metadata?: Record<string, unknown> }) {
+      return request<{ ok: boolean; asset: any }>('/api/v1/assets', 'POST', data)
+    },
+
+    async listAssets(query?: Record<string, string>) {
+      const suffix = query ? `?${new URLSearchParams(query).toString()}` : ''
+      return request<{ ok: boolean; assets: any[] }>(`/api/v1/assets${suffix}`)
+    },
+
+    async getAsset(assetId: string) {
+      return request<{ ok: boolean; asset: any }>(`/api/v1/assets/${assetId}`)
+    },
+
+    async deleteAsset(assetId: string) {
+      return request<{ ok: boolean; asset: any }>(`/api/v1/assets/${assetId}`, 'DELETE')
     },
 
     projects: {
@@ -78,57 +142,6 @@ export function createStacklaneClient(options: StacklaneClientOptions) {
     audit: {
       async list(projectId: string, limit = 50) {
         return request<{ events: any[] }>(`/v1/projects/${projectId}/audit?limit=${limit}`);
-      },
-    },
-
-    customers: {
-      async create(data: { projectId: string; name: string; email?: string }) {
-        return request<{ customer: any }>('/v1/customers', 'POST', data);
-      },
-      async list(projectId: string) {
-        return request<{ customers: any[] }>(`/v1/customers?projectId=${projectId}`);
-      },
-    },
-
-    apiKeys: {
-      async createCustomerKey(data: { customerId: string; name: string; scopes?: string[] }) {
-        return request<{ key: any; rawKey: string }>('/v1/customers/api-keys', 'POST', data);
-      },
-      async verifyCustomerKey(key: string) {
-        return request<{ valid: boolean; prefix: string }>('/v1/customers/api-keys/verify', 'POST', { key });
-      },
-    },
-
-    usage: {
-      async record(data: { projectId: string; customerId?: string; eventType: string; units?: number; metadata?: Record<string, unknown> }) {
-        return request<{ ok: boolean }>('/v1/usage', 'POST', data);
-      },
-    },
-
-    files: {
-      async upload(projectId: string, data: { name?: string; mimeType: string; data: string; visibility?: string }) {
-        return request<{ file: any }>(`/v1/projects/${projectId}/files`, 'POST', data);
-      },
-      async list(projectId: string) {
-        return request<{ files: any[] }>(`/v1/projects/${projectId}/files`);
-      },
-      async get(projectId: string, fileId: string) {
-        return request<{ file: any }>(`/v1/projects/${projectId}/files/${fileId}`);
-      },
-      async download(projectId: string, fileId: string) {
-        return request<any>(`/v1/projects/${projectId}/files/${fileId}/download`);
-      },
-    },
-
-    assets: {
-      async create(projectId: string, data: { type: string; format?: string; metadata?: Record<string, unknown> }) {
-        return request<{ asset: any }>(`/v1/projects/${projectId}/assets`, 'POST', data);
-      },
-      async list(projectId: string) {
-        return request<{ assets: any[] }>(`/v1/projects/${projectId}/assets`);
-      },
-      async get(projectId: string, assetId: string) {
-        return request<{ asset: any }>(`/v1/projects/${projectId}/assets/${assetId}`);
       },
     },
   };

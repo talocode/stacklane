@@ -1,0 +1,21 @@
+{
+  "name": "stacklane",
+  "private": true,
+  "version": "0.4.0",
+  "description": "Stacklane monorepo",
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @stacklane/api dev",
+    "dev:api": "pnpm --filter @stacklane/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test:v010": "node scripts/test-stacklane-v010.mjs",
+    "test:v020": "node scripts/test-stacklane-v020.mjs",
+    "test:v040": "node scripts/test-stacklane-v040.mjs",
+    "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "db:migrate": "pnpm --filter @stacklane/api db:migrate",
+    "migrate": "pnpm db:migrate",
+    "seed": "pnpm --filter @stacklane/api db:seed"
+  }
+}

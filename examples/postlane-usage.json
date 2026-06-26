@@ -1,0 +1,6 @@
+{
+  "customer": { "name": "Postlane Demo", "status": "active" },
+  "apiKey": { "mode": "live", "name": "postlane-live" },
+  "usageEvent": { "product": "postlane", "action": "post.publish", "units": 2 },
+  "asset": { "product": "postlane", "filename": "campaign-image.webp", "contentType": "image/webp" }
+}

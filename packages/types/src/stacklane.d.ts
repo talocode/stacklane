@@ -1,0 +1,132 @@
+import { z } from 'zod';
+export declare const stacklaneApiCustomerSchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    email: z.ZodOptional<z.ZodString>;
+    externalRef: z.ZodOptional<z.ZodString>;
+    status: z.ZodEnum<["active", "suspended", "deleted"]>;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+    status: "active" | "suspended" | "deleted";
+    createdAt: string;
+    updatedAt: string;
+    email?: string | undefined;
+    externalRef?: string | undefined;
+}, {
+    id: string;
+    name: string;
+    status: "active" | "suspended" | "deleted";
+    createdAt: string;
+    updatedAt: string;
+    email?: string | undefined;
+    externalRef?: string | undefined;
+}>;
+export declare const stacklaneApiKeySchema: z.ZodObject<{
+    id: z.ZodString;
+    customerId: z.ZodString;
+    name: z.ZodString;
+    keyHash: z.ZodString;
+    keyPrefix: z.ZodString;
+    status: z.ZodEnum<["active", "revoked"]>;
+    scopes: z.ZodArray<z.ZodString, "many">;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+    lastUsedAt: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+    status: "active" | "revoked";
+    createdAt: string;
+    updatedAt: string;
+    keyPrefix: string;
+    scopes: string[];
+    customerId: string;
+    keyHash: string;
+    lastUsedAt?: string | undefined;
+}, {
+    id: string;
+    name: string;
+    status: "active" | "revoked";
+    createdAt: string;
+    updatedAt: string;
+    keyPrefix: string;
+    scopes: string[];
+    customerId: string;
+    keyHash: string;
+    lastUsedAt?: string | undefined;
+}>;
+export declare const stacklaneUsageEventSchema: z.ZodObject<{
+    id: z.ZodString;
+    customerId: z.ZodOptional<z.ZodString>;
+    apiKeyId: z.ZodOptional<z.ZodString>;
+    product: z.ZodString;
+    action: z.ZodString;
+    units: z.ZodNumber;
+    metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
+    createdAt: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    createdAt: string;
+    action: string;
+    product: string;
+    units: number;
+    metadata?: Record<string, unknown> | undefined;
+    customerId?: string | undefined;
+    apiKeyId?: string | undefined;
+}, {
+    id: string;
+    createdAt: string;
+    action: string;
+    product: string;
+    units: number;
+    metadata?: Record<string, unknown> | undefined;
+    customerId?: string | undefined;
+    apiKeyId?: string | undefined;
+}>;
+export declare const stacklaneStoredAssetSchema: z.ZodObject<{
+    id: z.ZodString;
+    customerId: z.ZodOptional<z.ZodString>;
+    product: z.ZodString;
+    filename: z.ZodString;
+    contentType: z.ZodString;
+    sizeBytes: z.ZodNumber;
+    storagePath: z.ZodString;
+    publicUrl: z.ZodOptional<z.ZodString>;
+    checksum: z.ZodOptional<z.ZodString>;
+    metadata: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
+    createdAt: z.ZodString;
+    updatedAt: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    createdAt: string;
+    updatedAt: string;
+    product: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+    storagePath: string;
+    metadata?: Record<string, unknown> | undefined;
+    customerId?: string | undefined;
+    publicUrl?: string | undefined;
+    checksum?: string | undefined;
+}, {
+    id: string;
+    createdAt: string;
+    updatedAt: string;
+    product: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+    storagePath: string;
+    metadata?: Record<string, unknown> | undefined;
+    customerId?: string | undefined;
+    publicUrl?: string | undefined;
+    checksum?: string | undefined;
+}>;
+export type StacklaneApiCustomer = z.infer<typeof stacklaneApiCustomerSchema>;
+export type StacklaneApiKey = z.infer<typeof stacklaneApiKeySchema>;
+export type StacklaneUsageEvent = z.infer<typeof stacklaneUsageEventSchema>;
+export type StacklaneStoredAsset = z.infer<typeof stacklaneStoredAssetSchema>;

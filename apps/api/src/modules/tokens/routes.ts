@@ -13,7 +13,7 @@ const createTokenSchema = z.object({
 
 export async function tokenRoutes(app: FastifyInstance) {
   app.post<{ Params: { projectId: string } }>('/v1/projects/:projectId/tokens', async (request, reply) => {
-    const parse = createTokenSchema.safeParse({ ...request.body, projectId: request.params.projectId });
+    const parse = createTokenSchema.safeParse({ ...(request.body as Record<string, unknown>), projectId: request.params.projectId });
     if (!parse.success) {
       return reply.status(400).send({ error: { code: 'VALIDATION_ERROR', message: parse.error.issues[0]?.message } });
     }
@@ -60,7 +60,7 @@ export async function tokenRoutes(app: FastifyInstance) {
       return reply.status(401).send({ ok: false, valid: false, error: 'Invalid or revoked token' });
     }
 
-    await app.db.update(apiKeys).set({ lastUsedAt: new Date().toISOString() }).where(eq(apiKeys.id, key.id));
+    await app.db.update(apiKeys).set({ lastUsedAt: new Date() }).where(eq(apiKeys.id, key.id));
 
     return reply.send({ ok: true, valid: true, projectId: key.projectId, scopes: key.scopes });
   });
@@ -78,7 +78,7 @@ export async function tokenRoutes(app: FastifyInstance) {
 
     await app.db.update(apiKeys).set({
       status: 'revoked',
-      revokedAt: new Date().toISOString(),
+      updatedAt: new Date(),
     }).where(eq(apiKeys.id, tokenId));
 
     return reply.send({ ok: true, message: 'Token revoked' });

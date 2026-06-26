@@ -18,7 +18,7 @@ export function sendJson(res: ServerResponse, statusCode: number, payload: unkno
   res.writeHead(statusCode, {
     'content-type': 'application/json; charset=utf-8',
     'access-control-allow-origin': apiOrigin,
-    'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS',
+    'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
     'access-control-allow-headers': 'content-type',
     'access-control-allow-credentials': 'true'
   })

@@ -1,89 +1,73 @@
 # Stacklane API
 
-## Authentication
+All v0.4.0 endpoints return JSON only.
 
-All endpoints (except `/health`) require an access token:
+Legacy compatibility coverage retained from earlier Stacklane releases:
 
-```
+- `GET /health`
+- `POST /v1/projects/:id/tokens`
+- `POST /v1/tokens/verify`
+- `POST /v1/projects/:id/tokens/:tokenId/revoke`
+
+Auth header pattern:
+
+```text
 Authorization: Bearer sk_lane_live_...
 ```
 
-Or:
+## Health And Config
 
-```
-x-api-key: sk_lane_live_...
-```
+- `GET /v1/health`
+- `GET /v1/config/status`
 
-## Endpoints
+## Customers
 
-### Health Check
+- `POST /v1/customers`
+- `GET /v1/customers`
+- `GET /v1/customers/:id`
+- `PATCH /v1/customers/:id`
 
-**GET** `/health`
+## API Keys
 
-```json
-{ "status": "ok", "service": "stacklane-api", "timestamp": "...", "database": "up" }
-```
+- `POST /v1/api-keys`
+- `GET /v1/api-keys`
+- `POST /v1/api-keys/:id/revoke`
+- `POST /v1/api-keys/verify`
 
-### Create Project
+Raw keys are returned only once on creation. Storage keeps only `keyHash` and `keyPrefix`.
 
-**POST** `/v1/projects`
+## Usage
 
-```json
-{ "name": "My App", "organizationId": "org_xxx" }
-```
+Authenticated with `Authorization: Bearer sk_lane_dev_...` or `x-api-key: sk_lane_live_...`.
 
-### List Projects
+- `POST /v1/usage/events`
+- `GET /v1/usage/events`
+- `GET /v1/usage/summary`
 
-**GET** `/v1/projects`
+## Assets
 
-### Get Project
+Authenticated with an active API key.
 
-**GET** `/v1/projects/:id`
+- `POST /v1/assets`
+- `GET /v1/assets`
+- `GET /v1/assets/:id`
+- `DELETE /v1/assets/:id`
 
-### Set Database Connection
+`POST /v1/assets` accepts metadata-only requests or metadata plus `dataBase64` for local file persistence.
 
-**POST** `/v1/projects/:id/database`
+## Files
 
-```json
-{ "databaseUrl": "postgresql://...", "password": "secret", "provider": "postgres" }
-```
+- `POST /v1/files`
 
-### Get Database Info
-
-**GET** `/v1/projects/:id/database`
-
-### Create Access Token
-
-**POST** `/v1/projects/:id/tokens`
+## Errors
 
 ```json
-{ "name": "api-key", "scopes": ["read", "write"] }
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "product and filename are required."
+  }
+}
 ```
 
-**Response includes `rawToken` — store it securely, it will not be shown again.**
-
-### Verify Token
-
-**POST** `/v1/tokens/verify`
-
-```json
-{ "token": "sk_lane_live_..." }
-```
-
-### Revoke Token
-
-**POST** `/v1/projects/:id/tokens/:tokenId/revoke`
-
-### List Audit Events
-
-**GET** `/v1/projects/:id/audit?limit=50`
-
-## Error Format
-
-```json
-{ "error": { "code": "VALIDATION_ERROR", "message": "..." } }
-```
-
-## Rate Limiting
-
-Not implemented in v0.2.0. Add reverse proxy rate limiting in production.
+Missing or revoked API keys return JSON `401` errors. Stack traces are not exposed.

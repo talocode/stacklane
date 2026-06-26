@@ -7,7 +7,11 @@ import * as crypto from 'crypto';
 
 const STACKLANE_DIR = '.stacklane';
 const CONFIG_FILE = path.join(STACKLANE_DIR, 'config.json');
-const DB_FILE = path.join(STACKLANE_DIR, 'stacklane.db');
+const CUSTOMERS_FILE = path.join(STACKLANE_DIR, 'customers.json');
+const API_KEYS_FILE = path.join(STACKLANE_DIR, 'api-keys.json');
+const USAGE_EVENTS_FILE = path.join(STACKLANE_DIR, 'usage-events.json');
+const ASSETS_FILE = path.join(STACKLANE_DIR, 'assets.json');
+const FILES_DIR = path.join(STACKLANE_DIR, 'files');
 
 function ensureStacklaneDir() {
   if (!fs.existsSync(STACKLANE_DIR)) {
@@ -23,6 +27,17 @@ function loadConfig(): Record<string, unknown> {
 function saveConfig(config: Record<string, unknown>) {
   ensureStacklaneDir();
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
+function readList<T>(filePath: string): T[] {
+  ensureStacklaneDir()
+  if (!fs.existsSync(filePath)) return []
+  return JSON.parse(fs.readFileSync(filePath, 'utf-8')) as T[]
+}
+
+function writeList<T>(filePath: string, data: T[]) {
+  ensureStacklaneDir()
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2))
 }
 
 function generateId(prefix: string): string {
@@ -42,7 +57,7 @@ const program = new Command();
 program
   .name('stacklane')
   .description('Stacklane - lightweight backend/database layer')
-  .version('0.2.0');
+  .version('0.4.0');
 
 program
   .command('init')
@@ -94,7 +109,7 @@ program
     const tokenHash = hashToken(rawToken);
     const tokenPrefix = rawToken.slice(0, 12) + '...';
 
-    const tokens = config.tokens || [];
+    const tokens = (config.tokens as any[]) || [];
     tokens.push({
       id: generateId('tok'),
       projectId: config.projectId,
@@ -126,7 +141,7 @@ program
     }
 
     const tokenHash = hashToken(token);
-    const tokens = config.tokens || [];
+    const tokens = (config.tokens as any[]) || [];
     const found = tokens.find((t: any) => t.hash === tokenHash && !t.revokedAt);
     if (found) {
       console.log(`✓ Token is valid`);
@@ -204,7 +219,7 @@ program
   .description('Show recent audit events')
   .action(() => {
     const config = loadConfig();
-    const tokens = config.tokens || [];
+    const tokens = (config.tokens as any[]) || [];
     console.log(`  Project: ${config.projectId || '(not set)'}`);
     console.log(`  Tokens: ${tokens.length}`);
     for (const t of tokens) {
@@ -230,99 +245,169 @@ program
   });
 
 program
-  .command('customer create')
+  .command('customers create')
   .description('Create an API customer')
   .option('-n, --name <name>', 'Customer name')
   .option('-e, --email <email>', 'Customer email')
   .action((opts) => {
     ensureStacklaneDir();
-    const config = loadConfig();
     const id = generateId('cust');
-    const customers = config.customers || [];
-    customers.push({ id, name: opts.name || 'Customer', email: opts.email, projectId: config.projectId, createdAt: new Date().toISOString() });
-    config.customers = customers;
-    saveConfig(config);
+    const customers = readList<any>(CUSTOMERS_FILE)
+    customers.push({ id, name: opts.name || 'Customer', email: opts.email, status: 'active', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+    writeList(CUSTOMERS_FILE, customers)
     console.log(`✓ Customer created: ${opts.name || 'Customer'}`);
     console.log(`  ID: ${id}`);
   });
 
 program
-  .command('customer list')
+  .command('customers list')
   .description('List API customers')
   .action(() => {
-    const config = loadConfig();
-    const customers = config.customers || [];
+    const customers = readList<any>(CUSTOMERS_FILE)
     if (customers.length === 0) { console.log('  No customers found.'); return; }
     for (const c of customers) console.log(`  - ${c.name} (${c.id})`);
   });
 
 program
-  .command('customer key create')
+  .command('keys create')
   .description('Create a customer API key')
   .option('-c, --customer <id>', 'Customer ID')
   .option('-n, --name <name>', 'Key name', 'default')
+  .option('--live', 'Create a live key instead of dev')
   .action((opts) => {
     ensureStacklaneDir();
-    const config = loadConfig();
-    const rawKey = 'sk_lane_customer_' + crypto.randomBytes(48).toString('base64url');
+    const rawKey = generateToken(opts.live ? 'sk_lane_live' : 'sk_lane_dev');
     const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
-    const keys = config.customerKeys || [];
-    keys.push({ id: generateId('ckey'), customerId: opts.customer, name: opts.name, hash: keyHash, createdAt: new Date().toISOString() });
-    config.customerKeys = keys;
-    saveConfig(config);
-    console.log(`✓ Customer API key created: ${opts.name}`);
+    const keys = readList<any>(API_KEYS_FILE)
+    keys.push({ id: generateId('key'), customerId: opts.customer, name: opts.name, keyHash, keyPrefix: rawKey.slice(0, 16), status: 'active', scopes: ['*'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+    writeList(API_KEYS_FILE, keys)
+    console.log(`✓ API key created: ${opts.name}`);
     console.log(`  Key: ${rawKey}`);
     console.log(`\n⚠ Store this key securely. It will not be shown again.`);
   });
 
 program
+  .command('keys list')
+  .description('List API keys')
+  .action(() => {
+    const keys = readList<any>(API_KEYS_FILE)
+    if (keys.length === 0) { console.log('  No API keys found.'); return }
+    for (const key of keys) console.log(`  - ${key.name} (${key.id}) ${key.keyPrefix} ${key.status}`)
+  })
+
+program
+  .command('keys revoke')
+  .description('Revoke an API key')
+  .requiredOption('-i, --id <id>', 'API key ID')
+  .action((opts) => {
+    const keys = readList<any>(API_KEYS_FILE)
+    const next = keys.map((key) => key.id === opts.id ? { ...key, status: 'revoked', updatedAt: new Date().toISOString() } : key)
+    writeList(API_KEYS_FILE, next)
+    console.log(`✓ Revoked API key: ${opts.id}`)
+  })
+
+program
+  .command('usage record')
+  .description('Record a usage event')
+  .requiredOption('-p, --product <product>', 'Product name')
+  .requiredOption('-a, --action <action>', 'Usage action')
+  .option('-u, --units <units>', 'Units', '1')
+  .option('-c, --customer <id>', 'Customer ID')
+  .action((opts) => {
+    const events = readList<any>(USAGE_EVENTS_FILE)
+    events.push({ id: generateId('usage'), customerId: opts.customer, product: opts.product, action: opts.action, units: Number(opts.units), createdAt: new Date().toISOString() })
+    writeList(USAGE_EVENTS_FILE, events)
+    console.log(`✓ Usage event recorded: ${opts.product}/${opts.action}`)
+  })
+
+program
+  .command('usage list')
+  .description('List usage events')
+  .action(() => {
+    const events = readList<any>(USAGE_EVENTS_FILE)
+    if (events.length === 0) { console.log('  No usage events found.'); return }
+    for (const event of events) console.log(`  - ${event.product}/${event.action} units=${event.units}`)
+  })
+
+program
   .command('usage summary')
   .description('Show usage summary')
   .action(() => {
-    const config = loadConfig();
-    const events = config.usageEvents || [];
+    const events = readList<any>(USAGE_EVENTS_FILE)
     console.log(`  Total events: ${events.length}`);
     const byType: Record<string, number> = {};
-    for (const e of events) { byType[e.eventType] = (byType[e.eventType] || 0) + 1; }
+    for (const e of events) { const key = `${e.product}:${e.action}`; byType[key] = (byType[key] || 0) + Number(e.units || 0); }
     for (const [type, count] of Object.entries(byType)) console.log(`  ${type}: ${count}`);
   });
 
 program
-  .command('file upload')
-  .description('Upload a file')
-  .option('-f, --file <path>', 'File to upload')
-  .option('-n, --name <name>', 'File name')
+  .command('assets create')
+  .description('Create an asset record')
+  .requiredOption('-p, --product <product>', 'Product name')
+  .requiredOption('-f, --filename <filename>', 'Asset filename')
+  .option('-t, --content-type <type>', 'Content type', 'application/octet-stream')
+  .option('--file <path>', 'Local file path to store')
   .action((opts) => {
     ensureStacklaneDir();
-    if (!opts.file || !fs.existsSync(opts.file)) { console.error('✗ File not found'); process.exit(1); }
-    const buffer = fs.readFileSync(opts.file);
-    const filename = opts.name || path.basename(opts.file);
-    const id = generateId('file');
-    const storageKey = `${Date.now()}-${id}-${filename}`;
-    const storageDir = path.join(STACKLANE_DIR, 'files');
-    fs.mkdirSync(storageDir, { recursive: true });
-    fs.writeFileSync(path.join(storageDir, storageKey), buffer);
-    console.log(`✓ File uploaded: ${filename}`);
-    console.log(`  ID: ${id}`);
-    console.log(`  Size: ${buffer.length} bytes`);
-    console.log(`  Storage key: ${storageKey}`);
-  });
+    const assets = readList<any>(ASSETS_FILE)
+    let storagePath = ''
+    let sizeBytes = 0
+    if (opts.file) {
+      if (!fs.existsSync(opts.file)) { console.error('✗ File not found'); process.exit(1) }
+      fs.mkdirSync(FILES_DIR, { recursive: true })
+      const output = `${generateId('file')}-${path.basename(opts.filename)}`
+      const destination = path.join(FILES_DIR, output)
+      fs.copyFileSync(opts.file, destination)
+      storagePath = destination
+      sizeBytes = fs.statSync(destination).size
+    }
+    const asset = { id: generateId('asset'), product: opts.product, filename: opts.filename, contentType: opts.contentType, sizeBytes, storagePath, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    assets.push(asset)
+    writeList(ASSETS_FILE, assets)
+    console.log(`✓ Asset created: ${asset.id}`)
+  })
 
 program
-  .command('file list')
-  .description('List uploaded files')
-  .action(() => {
-    const storageDir = path.join(STACKLANE_DIR, 'files');
-    if (!fs.existsSync(storageDir)) { console.log('  No files uploaded.'); return; }
-    const files = fs.readdirSync(storageDir);
-    for (const f of files) console.log(`  - ${f}`);
-  });
-
-program
-  .command('asset list')
+  .command('assets list')
   .description('List assets')
   .action(() => {
-    console.log('  No assets yet. Create assets via API: POST /v1/projects/:id/assets');
-  });
+    const assets = readList<any>(ASSETS_FILE)
+    if (assets.length === 0) { console.log('  No assets found.'); return }
+    for (const asset of assets) console.log(`  - ${asset.id} ${asset.product} ${asset.filename}`)
+  })
+
+program
+  .command('assets get')
+  .description('Get an asset')
+  .requiredOption('-i, --id <id>', 'Asset ID')
+  .action((opts) => {
+    const assets = readList<any>(ASSETS_FILE)
+    const asset = assets.find((entry) => entry.id === opts.id)
+    if (!asset) { console.log('  Asset not found.'); return }
+    console.log(JSON.stringify(asset, null, 2))
+  })
+
+program
+  .command('assets delete')
+  .description('Delete an asset')
+  .requiredOption('-i, --id <id>', 'Asset ID')
+  .action((opts) => {
+    const assets = readList<any>(ASSETS_FILE)
+    writeList(ASSETS_FILE, assets.filter((asset) => asset.id !== opts.id))
+    console.log(`✓ Deleted asset: ${opts.id}`)
+  })
+
+program
+  .command('doctor')
+  .description('Show local Stacklane config status')
+  .action(() => {
+    console.log(`  .stacklane/: ${fs.existsSync(STACKLANE_DIR) ? 'present' : 'missing'}`)
+    console.log(`  customers.json: ${fs.existsSync(CUSTOMERS_FILE) ? 'present' : 'missing'}`)
+    console.log(`  api-keys.json: ${fs.existsSync(API_KEYS_FILE) ? 'present' : 'missing'}`)
+    console.log(`  usage-events.json: ${fs.existsSync(USAGE_EVENTS_FILE) ? 'present' : 'missing'}`)
+    console.log(`  assets.json: ${fs.existsSync(ASSETS_FILE) ? 'present' : 'missing'}`)
+    console.log(`  STACKLANE_MAX_FILE_SIZE_BYTES: ${process.env.STACKLANE_MAX_FILE_SIZE_BYTES ? 'present' : 'missing'}`)
+    console.log(`  DATABASE_URL: ${process.env.DATABASE_URL ? 'present' : 'missing'}`)
+  })
 
 program.parse();

@@ -1,76 +1,52 @@
 # Stacklane
 
-**Lightweight backend/database layer for builders and developers.**
+Stacklane is a lightweight backend/database/API layer for Talocode products.
 
-Stacklane provides project management, access tokens, database connection storage, and audit logging — the core primitives you need to ship backend features without heavy infrastructure overhead.
+## Earlier Versions
 
-## Quick Start
+- v0.1.0: core API, access tokens, database connection storage, audit events, health endpoint
+- v0.2.0: CLI, SDK, env generation, backup flow, token verification
 
-```bash
-# Initialize
-npx stacklane init
+## v0.4.0
 
-# Create a project
-npx stacklane project create -n "My App"
+Stacklane v0.4.0 is local-first.
 
-# Generate access token
-npx stacklane token create -n "api-key"
+- No external platform dependency
+- No Supabase dependency
+- No Resend dependency
+- No billing yet
+- API keys are hashed before storage
+- Raw API keys are shown only once at creation
+- File storage is local under `.stacklane/files/`
 
-# Set database connection
-npx stacklane db set -u "postgresql://..." -p "secret"
+## Local Storage
 
-# Generate environment file
-npx stacklane env generate
-```
+- `.stacklane/customers.json`
+- `.stacklane/api-keys.json`
+- `.stacklane/usage-events.json`
+- `.stacklane/assets.json`
+- `.stacklane/files/`
 
-## v0.1.0 Features
+## New v0.4.0 Primitives
 
-- Project creation and management
-- Access token generation, verification, and revocation
-- Database connection storage
-- Audit event logging
-- Health endpoint
-- JSON-only API responses
+- API customers
+- API keys with `sk_lane_dev_...` and `sk_lane_live_...`
+- Usage events and summaries
+- Asset metadata records
+- Local file persistence for hosted API workflows
 
-## v0.2.0 Features
+## Docs
 
-- CLI (`stacklane`)
-- TypeScript SDK (`@stacklane/sdk`)
-- Environment file generator
-- Local config backup
-- Token verification
+- `docs/API.md`
+- `docs/SDK.md`
+- `docs/CLI.md`
+- `docs/STORAGE_AND_USAGE.md`
+- `docs/SECURITY.md`
+- `docs/TALOCODE_INTEGRATION.md`
 
-## API Endpoints
+## Status
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Health check |
-| POST | `/v1/projects` | Create project |
-| GET | `/v1/projects` | List projects |
-| GET | `/v1/projects/:id` | Get project |
-| POST | `/v1/projects/:id/database` | Set database connection |
-| GET | `/v1/projects/:id/database` | Get database info |
-| POST | `/v1/projects/:id/tokens` | Create access token |
-| POST | `/v1/tokens/verify` | Verify access token |
-| POST | `/v1/projects/:id/tokens/:tokenId/revoke` | Revoke token |
-| GET | `/v1/projects/:id/audit` | List audit events |
-
-## Security Model
-
-- Access tokens are hashed before storage (SHA-256)
-- Raw tokens shown only at creation time
-- Database passwords stored as references, not in logs
-- All API responses are JSON-only
-- Audit events logged for all state changes
-
-## Limitations (v0.2.0)
-
-- No production multi-tenant auth
-- No realtime subscriptions
-- No file storage buckets
-- No billing integration
-- No automatic database provisioning
-- No vector database
+Future adapters may support object storage, but v0.4.0 does not require cloud provisioning or any external platform.
 
 ## License
 

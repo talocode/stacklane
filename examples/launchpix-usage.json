@@ -1,0 +1,6 @@
+{
+  "customer": { "name": "LaunchPix Demo", "status": "active" },
+  "apiKey": { "mode": "live", "name": "launchpix-prod" },
+  "usageEvent": { "product": "launchpix", "action": "asset.render", "units": 3 },
+  "asset": { "product": "launchpix", "filename": "hero-banner.png", "contentType": "image/png" }
+}

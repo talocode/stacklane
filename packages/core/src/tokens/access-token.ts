@@ -1,5 +1,11 @@
 import * as crypto from 'crypto';
 
+type HeaderCarrier = {
+  headers: {
+    get(name: string): string | null
+  }
+}
+
 const TOKEN_PREFIX = 'sk_lane_';
 const DEV_PREFIX = 'sk_lane_dev_';
 const TOKEN_LENGTH = 48;
@@ -48,7 +54,7 @@ export function verifyToken(rawToken: string, hashedToken: string): boolean {
   return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(hashedToken));
 }
 
-export function extractTokenFromHeader(request: Request): string | null {
+export function extractTokenFromHeader(request: HeaderCarrier): string | null {
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.slice(7);

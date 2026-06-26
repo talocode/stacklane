@@ -14,7 +14,7 @@ export async function auditRoutes(app: FastifyInstance) {
 
     return reply.send({
       ok: true,
-      events: events.map((e) => ({
+      events: events.map((e: typeof events[number]) => ({
         id: e.id,
         projectId: e.projectId,
         action: e.eventType,

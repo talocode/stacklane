@@ -1,0 +1,8 @@
+packages:
+  - apps/api
+  - packages/cli
+  - packages/config
+  - packages/core
+  - packages/sdk
+  - packages/storage
+  - packages/types

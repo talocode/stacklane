@@ -1,13 +1,16 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": ".",
+    "paths": {
+      "@stacklane/core": ["../../packages/core/src/index.ts"],
+      "@stacklane/storage": ["../../packages/storage/src/index.ts"],
+      "@stacklane/types": ["../../packages/types/src/index.ts"],
+      "@stacklane/config": ["../../packages/config/src/index.ts"]
+    }
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/**/*.d.ts"]
 }

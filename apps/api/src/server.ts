@@ -3,6 +3,27 @@ import { randomUUID } from 'node:crypto'
 import { config } from './config'
 import { db } from './db'
 import {
+  authenticateApiKey,
+  createApiKey as createLocalApiKey,
+  createAssetRecord,
+  createCustomer as createLocalCustomer,
+  deleteAssetRecord,
+  getAsset,
+  getConfigStatus,
+  getCustomer,
+  listApiKeys as listLocalApiKeys,
+  listAssets,
+  listCustomers as listLocalCustomers,
+  listUsageEvents,
+  recordUsageEvent as recordLocalUsageEvent,
+  revokeApiKey as revokeLocalApiKey,
+  summarizeUsage,
+  summarizeUsageByAction,
+  summarizeUsageByCustomer,
+  summarizeUsageByProduct,
+  updateCustomer as updateLocalCustomer
+} from './local-store'
+import {
   HttpError,
   clearSessionCookie,
   parseBody,
@@ -78,6 +99,19 @@ const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS ||
 const adapter = new MockProvisioningAdapter()
 const workerId = `worker-${randomUUID().slice(0, 8)}`
 
+function requireLocalApiKey(req: IncomingMessage) {
+  const authHeader = req.headers.authorization
+  const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
+  const headerKey = typeof req.headers['x-api-key'] === 'string' ? req.headers['x-api-key'] : undefined
+  const rawKey = bearer || headerKey
+  if (!rawKey) throw new HttpError(401, 'MISSING_API_KEY', 'Missing API key.')
+  const apiKey = authenticateApiKey(rawKey)
+  if (!apiKey || apiKey.status !== 'active') {
+    throw new HttpError(401, 'INVALID_API_KEY', 'Invalid or revoked API key.')
+  }
+  return apiKey
+}
+
 async function getAuthUser(req: IncomingMessage) {
   const cookies = parseCookies(req)
   const token = cookies.sl_session
@@ -124,6 +158,196 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
   if (req.method === 'GET' && path === '/health') {
     sendJson(res, 200, { ok: true, service: 'stacklane-api', now: new Date().toISOString(), adapter: adapter.name, workerId })
     return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/health') {
+    sendJson(res, 200, { ok: true, service: 'stacklane-api', version: '0.4.0', mode: 'local-first', timestamp: new Date().toISOString() })
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/config/status') {
+    sendJson(res, 200, { ok: true, config: getConfigStatus() })
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/customers') {
+    const body = await parseBody(req)
+    const name = typeof body.name === 'string' ? body.name.trim() : ''
+    if (!name) throw new HttpError(422, 'VALIDATION_ERROR', 'name is required.')
+    const customer = createLocalCustomer({
+      name,
+      email: typeof body.email === 'string' ? body.email : undefined,
+      externalRef: typeof body.externalRef === 'string' ? body.externalRef : undefined,
+      status: body.status === 'suspended' || body.status === 'deleted' ? body.status : 'active'
+    })
+    sendJson(res, 201, { ok: true, customer })
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/customers') {
+    sendJson(res, 200, { ok: true, customers: listLocalCustomers() })
+    return
+  }
+
+  if (path.startsWith('/api/v1/customers/')) {
+    const customerId = decodeURIComponent(path.replace('/api/v1/customers/', ''))
+    if (req.method === 'GET') {
+      const customer = getCustomer(customerId)
+      if (!customer) throw new HttpError(404, 'NOT_FOUND', 'Customer not found.')
+      sendJson(res, 200, { ok: true, customer })
+      return
+    }
+    if (req.method === 'PATCH') {
+      const body = await parseBody(req)
+      const customer = updateLocalCustomer(customerId, {
+        name: typeof body.name === 'string' ? body.name.trim() : undefined,
+        email: typeof body.email === 'string' ? body.email : undefined,
+        externalRef: typeof body.externalRef === 'string' ? body.externalRef : undefined,
+        status: body.status === 'active' || body.status === 'suspended' || body.status === 'deleted' ? body.status : undefined
+      })
+      if (!customer) throw new HttpError(404, 'NOT_FOUND', 'Customer not found.')
+      sendJson(res, 200, { ok: true, customer })
+      return
+    }
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/api-keys') {
+    const body = await parseBody(req)
+    const customerId = typeof body.customerId === 'string' ? body.customerId : ''
+    const name = typeof body.name === 'string' ? body.name.trim() : ''
+    if (!customerId || !getCustomer(customerId)) throw new HttpError(422, 'VALIDATION_ERROR', 'customerId must reference an existing customer.')
+    if (!name) throw new HttpError(422, 'VALIDATION_ERROR', 'name is required.')
+    const result = createLocalApiKey({
+      customerId,
+      name,
+      scopes: Array.isArray(body.scopes) ? body.scopes.filter((value): value is string => typeof value === 'string') : undefined,
+      mode: body.mode === 'live' ? 'live' : 'dev'
+    })
+    sendJson(res, 201, {
+      ok: true,
+      apiKey: {
+        ...result.apiKey,
+        rawKey: result.rawKey
+      },
+      warning: 'Store this raw API key securely. It will not be shown again.'
+    })
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/api-keys') {
+    const customerId = url.searchParams.get('customerId') || undefined
+    sendJson(res, 200, { ok: true, apiKeys: listLocalApiKeys(customerId) })
+    return
+  }
+
+  if (req.method === 'POST' && path.startsWith('/api/v1/api-keys/') && path.endsWith('/revoke')) {
+    const keyId = decodeURIComponent(path.replace('/api/v1/api-keys/', '').replace('/revoke', ''))
+    const apiKey = revokeLocalApiKey(keyId)
+    if (!apiKey) throw new HttpError(404, 'NOT_FOUND', 'API key not found.')
+    sendJson(res, 200, { ok: true, apiKey })
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/usage/events') {
+    const apiKey = requireLocalApiKey(req)
+    const body = await parseBody(req)
+    const product = typeof body.product === 'string' ? body.product.trim() : ''
+    const action = typeof body.action === 'string' ? body.action.trim() : ''
+    const units = typeof body.units === 'number' ? body.units : Number(body.units || 0)
+    if (!product || !action || !Number.isFinite(units) || units <= 0) {
+      throw new HttpError(422, 'VALIDATION_ERROR', 'product, action, and positive units are required.')
+    }
+    const event = recordLocalUsageEvent({
+      customerId: apiKey.customerId,
+      apiKeyId: apiKey.id,
+      product,
+      action,
+      units,
+      metadata: typeof body.metadata === 'object' && body.metadata ? (body.metadata as Record<string, unknown>) : undefined
+    })
+    sendJson(res, 201, { ok: true, event })
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/usage/events') {
+    requireLocalApiKey(req)
+    const events = listUsageEvents({
+      customerId: url.searchParams.get('customerId') || undefined,
+      product: url.searchParams.get('product') || undefined,
+      action: url.searchParams.get('action') || undefined,
+      from: url.searchParams.get('from') || undefined,
+      to: url.searchParams.get('to') || undefined
+    })
+    sendJson(res, 200, { ok: true, events })
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/usage/summary') {
+    requireLocalApiKey(req)
+    const filters = {
+      customerId: url.searchParams.get('customerId') || undefined,
+      product: url.searchParams.get('product') || undefined,
+      action: url.searchParams.get('action') || undefined,
+      from: url.searchParams.get('from') || undefined,
+      to: url.searchParams.get('to') || undefined
+    }
+    sendJson(res, 200, {
+      ok: true,
+      summary: summarizeUsage(filters),
+      byCustomer: summarizeUsageByCustomer(filters),
+      byProduct: summarizeUsageByProduct(filters),
+      byAction: summarizeUsageByAction(filters)
+    })
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/assets') {
+    const apiKey = requireLocalApiKey(req)
+    const body = await parseBody(req)
+    const product = typeof body.product === 'string' ? body.product.trim() : ''
+    const filename = typeof body.filename === 'string' ? body.filename.trim() : ''
+    const contentType = typeof body.contentType === 'string' ? body.contentType.trim() : 'application/octet-stream'
+    if (!product || !filename) throw new HttpError(422, 'VALIDATION_ERROR', 'product and filename are required.')
+    const asset = createAssetRecord({
+      customerId: apiKey.customerId,
+      product,
+      filename,
+      contentType,
+      publicUrl: typeof body.publicUrl === 'string' ? body.publicUrl : undefined,
+      metadata: typeof body.metadata === 'object' && body.metadata ? (body.metadata as Record<string, unknown>) : undefined,
+      bytesBase64: typeof body.bytesBase64 === 'string' ? body.bytesBase64 : undefined
+    })
+    sendJson(res, 201, { ok: true, asset })
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/assets') {
+    requireLocalApiKey(req)
+    sendJson(res, 200, {
+      ok: true,
+      assets: listAssets({
+        customerId: url.searchParams.get('customerId') || undefined,
+        product: url.searchParams.get('product') || undefined
+      })
+    })
+    return
+  }
+
+  if (path.startsWith('/api/v1/assets/')) {
+    requireLocalApiKey(req)
+    const assetId = decodeURIComponent(path.replace('/api/v1/assets/', ''))
+    if (req.method === 'GET') {
+      const asset = getAsset(assetId)
+      if (!asset) throw new HttpError(404, 'NOT_FOUND', 'Asset not found.')
+      sendJson(res, 200, { ok: true, asset })
+      return
+    }
+    if (req.method === 'DELETE') {
+      const asset = deleteAssetRecord(assetId)
+      if (!asset) throw new HttpError(404, 'NOT_FOUND', 'Asset not found.')
+      sendJson(res, 200, { ok: true, asset })
+      return
+    }
   }
 
   if (req.method === 'POST' && path === '/auth/login') {

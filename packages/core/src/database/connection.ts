@@ -1,3 +1,5 @@
+import { URL } from 'url';
+
 export interface DatabaseConnection {
   id: string;
   projectId: string;
