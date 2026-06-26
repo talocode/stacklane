@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1
+
+- add root `pnpm lint` via `scripts/lint-workspace.mjs`
+- clarify that `apps/api/src/server.ts` is the active runtime entrypoint
+- keep `apps/api/src/app.ts` as a compatibility shim for older checks
+- add direct runtime endpoint coverage for customer, key, usage, asset, and file flows
+
 ## 0.4.0
 
 - added local-first customers, API keys, usage events, and asset metadata primitives

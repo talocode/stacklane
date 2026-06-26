@@ -99,6 +99,8 @@ const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS ||
 const adapter = new MockProvisioningAdapter()
 const workerId = `worker-${randomUUID().slice(0, 8)}`
 
+export { handler }
+
 function requireLocalApiKey(req: IncomingMessage) {
   const authHeader = req.headers.authorization
   const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
@@ -225,10 +227,8 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     })
     sendJson(res, 201, {
       ok: true,
-      apiKey: {
-        ...result.apiKey,
-        rawKey: result.rawKey
-      },
+      apiKey: result.apiKey,
+      rawKey: result.rawKey,
       warning: 'Store this raw API key securely. It will not be shown again.'
     })
     return
@@ -237,6 +237,16 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
   if (req.method === 'GET' && path === '/api/v1/api-keys') {
     const customerId = url.searchParams.get('customerId') || undefined
     sendJson(res, 200, { ok: true, apiKeys: listLocalApiKeys(customerId) })
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/api-keys/verify') {
+    const body = await parseBody(req)
+    const key = typeof body.key === 'string' ? body.key : ''
+    if (!key) throw new HttpError(422, 'VALIDATION_ERROR', 'key is required.')
+    const apiKey = authenticateApiKey(key)
+    if (!apiKey) throw new HttpError(401, 'INVALID_API_KEY', 'Invalid or revoked API key.')
+    sendJson(res, 200, { ok: true, valid: true, apiKeyId: apiKey.id, customerId: apiKey.customerId, scopes: apiKey.scopes })
     return
   }
 
@@ -298,6 +308,28 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       byProduct: summarizeUsageByProduct(filters),
       byAction: summarizeUsageByAction(filters)
     })
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/files') {
+    const apiKey = requireLocalApiKey(req)
+    const body = await parseBody(req)
+    const product = typeof body.product === 'string' ? body.product.trim() : ''
+    const filename = typeof body.filename === 'string' ? body.filename.trim() : ''
+    const contentType = typeof body.contentType === 'string' ? body.contentType.trim() : 'application/octet-stream'
+    const bytesBase64 = typeof body.bytesBase64 === 'string' ? body.bytesBase64 : ''
+    if (!product || !filename || !bytesBase64) {
+      throw new HttpError(422, 'VALIDATION_ERROR', 'product, filename, and bytesBase64 are required.')
+    }
+    const file = createAssetRecord({
+      customerId: apiKey.customerId,
+      product,
+      filename,
+      contentType,
+      metadata: typeof body.metadata === 'object' && body.metadata ? (body.metadata as Record<string, unknown>) : undefined,
+      bytesBase64
+    })
+    sendJson(res, 201, { ok: true, file })
     return
   }
 
@@ -746,33 +778,66 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
   throw new HttpError(404, 'NOT_FOUND', 'Route not found.', { method: req.method, path })
 }
 
-const server = createServer(async (req, res) => {
-  try {
-    await handler(req, res)
-  } catch (error) {
-    if (error instanceof HttpError) return sendError(res, error)
-    if ((error as { code?: string }).code === '23505') return sendError(res, new HttpError(409, 'DUPLICATE_RESOURCE', 'A uniqueness constraint was violated.'))
-    console.error(error)
-    sendError(res, new HttpError(500, 'INTERNAL_ERROR', 'Unexpected server error.'))
-  }
-})
-
-async function start() {
-  await db.query('SELECT 1')
-  await ensureBootstrapData()
-
-  setInterval(() => {
-    runProvisioningWorkerTick(adapter, workerId).catch((error) => {
-      console.error('Provisioning worker tick failed', error)
-    })
-  }, WORKER_INTERVAL_MS)
-
-  server.listen(config.port, () => {
-    console.log(`Stacklane API running on http://localhost:${config.port}`)
+export function createApiServer() {
+  return createServer(async (req, res) => {
+    try {
+      await handler(req, res)
+    } catch (error) {
+      if (error instanceof HttpError) return sendError(res, error)
+      if ((error as { code?: string }).code === '23505') return sendError(res, new HttpError(409, 'DUPLICATE_RESOURCE', 'A uniqueness constraint was violated.'))
+      console.error(error)
+      sendError(res, new HttpError(500, 'INTERNAL_ERROR', 'Unexpected server error.'))
+    }
   })
 }
 
-start().catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+const server = createApiServer()
+
+export async function startServer(options?: { skipBootstrap?: boolean; port?: number; startWorker?: boolean }) {
+  const port = options?.port ?? config.port
+  const skipBootstrap = options?.skipBootstrap ?? process.env.STACKLANE_SKIP_BOOTSTRAP === '1'
+  const startWorker = options?.startWorker ?? process.env.STACKLANE_SKIP_WORKER !== '1'
+  if (!skipBootstrap) {
+    await db.query('SELECT 1')
+    await ensureBootstrapData()
+  }
+
+  let interval: NodeJS.Timeout | undefined
+  if (startWorker) {
+    interval = setInterval(() => {
+      runProvisioningWorkerTick(adapter, workerId).catch((error) => {
+        console.error('Provisioning worker tick failed', error)
+      })
+    }, WORKER_INTERVAL_MS)
+  }
+
+  await new Promise<void>((resolve) => {
+    server.listen(port, () => resolve())
+  })
+
+  return {
+    server,
+    port,
+    close: async () => {
+      if (interval) clearInterval(interval)
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => {
+          if (error) reject(error)
+          else resolve()
+        })
+      })
+    }
+  }
+}
+
+async function start() {
+  const started = await startServer()
+  console.log(`Stacklane API running on http://localhost:${started.port}`)
+}
+
+if (require.main === module) {
+  start().catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })
+}

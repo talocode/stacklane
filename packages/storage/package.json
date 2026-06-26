@@ -1,6 +1,6 @@
 {
   "name": "@stacklane/storage",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Stacklane local-first storage primitives",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

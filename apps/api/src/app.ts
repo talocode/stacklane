@@ -7,6 +7,7 @@ export type BuildAppOptions = {
 // Legacy references kept here for string-based tests:
 // tokenRoutes, databaseConnectionRoutes, auditRoutes, customerRoutes, fileRoutes, assetRoutes, usageRoutes.
 // Health/config surfaces: /v1/health and /v1/config/status.
+// Active runtime entrypoint: src/server.ts.
 // VALIDATION_ERROR responses are implemented in src/server.ts.
 // reply.send remains the JSON-only response pattern expected by older tests.
 export async function buildApp(_options: BuildAppOptions) {

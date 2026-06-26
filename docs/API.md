@@ -1,6 +1,11 @@
 # Stacklane API
 
-All v0.4.0 endpoints return JSON only.
+All v0.4.1 endpoints return JSON only.
+
+## Active Runtime
+
+- Active entrypoint: `apps/api/src/server.ts`
+- Compatibility shim: `apps/api/src/app.ts`
 
 Legacy compatibility coverage retained from earlier Stacklane releases:
 
@@ -17,22 +22,22 @@ Authorization: Bearer sk_lane_live_...
 
 ## Health And Config
 
-- `GET /v1/health`
-- `GET /v1/config/status`
+- `GET /api/v1/health`
+- `GET /api/v1/config/status`
 
 ## Customers
 
-- `POST /v1/customers`
-- `GET /v1/customers`
-- `GET /v1/customers/:id`
-- `PATCH /v1/customers/:id`
+- `POST /api/v1/customers`
+- `GET /api/v1/customers`
+- `GET /api/v1/customers/:id`
+- `PATCH /api/v1/customers/:id`
 
 ## API Keys
 
-- `POST /v1/api-keys`
-- `GET /v1/api-keys`
-- `POST /v1/api-keys/:id/revoke`
-- `POST /v1/api-keys/verify`
+- `POST /api/v1/api-keys`
+- `GET /api/v1/api-keys`
+- `POST /api/v1/api-keys/:id/revoke`
+- `POST /api/v1/api-keys/verify`
 
 Raw keys are returned only once on creation. Storage keeps only `keyHash` and `keyPrefix`.
 
@@ -40,24 +45,24 @@ Raw keys are returned only once on creation. Storage keeps only `keyHash` and `k
 
 Authenticated with `Authorization: Bearer sk_lane_dev_...` or `x-api-key: sk_lane_live_...`.
 
-- `POST /v1/usage/events`
-- `GET /v1/usage/events`
-- `GET /v1/usage/summary`
+- `POST /api/v1/usage/events`
+- `GET /api/v1/usage/events`
+- `GET /api/v1/usage/summary`
 
 ## Assets
 
 Authenticated with an active API key.
 
-- `POST /v1/assets`
-- `GET /v1/assets`
-- `GET /v1/assets/:id`
-- `DELETE /v1/assets/:id`
+- `POST /api/v1/assets`
+- `GET /api/v1/assets`
+- `GET /api/v1/assets/:id`
+- `DELETE /api/v1/assets/:id`
 
-`POST /v1/assets` accepts metadata-only requests or metadata plus `dataBase64` for local file persistence.
+`POST /api/v1/assets` accepts metadata-only requests or metadata plus `bytesBase64` for local file persistence.
 
 ## Files
 
-- `POST /v1/files`
+- `POST /api/v1/files`
 
 ## Errors
 

@@ -1,6 +1,6 @@
 # Security
 
-Stacklane v0.4.0 security rules:
+Stacklane v0.4.1 security rules:
 
 - API keys are SHA-256 hashed before storage.
 - Raw API keys are returned only once.
@@ -10,4 +10,6 @@ Stacklane v0.4.0 security rules:
 - Unsafe filenames and path traversal are rejected.
 - API responses are JSON only.
 
-v0.4.0 does not add billing, hosted provisioning, or external secret platforms.
+v0.4.1 does not add billing, hosted provisioning, or external secret platforms.
+
+The direct runtime test suite also verifies that these customer/key/usage/asset responses remain JSON-only and do not expose raw stored secrets.

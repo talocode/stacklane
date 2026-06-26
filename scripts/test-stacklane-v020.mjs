@@ -107,12 +107,12 @@ assert(noSupabaseCopy, 'No Supabase replacement claims')
 // Test 8: Package versions
 console.log('\n8. Package Versions')
 const corePkg = JSON.parse(fs.readFileSync('packages/core/package.json', 'utf-8'))
-assert(corePkg.version === '0.4.0', 'Core version is 0.4.0')
+assert(corePkg.version === '0.4.1', 'Core version is 0.4.1')
 
 const sdkPkg = JSON.parse(fs.readFileSync('packages/sdk/package.json', 'utf-8'))
-assert(sdkPkg.version === '0.4.0', 'SDK version is 0.4.0')
+assert(sdkPkg.version === '0.4.1', 'SDK version is 0.4.1')
 
-assert(cliPkg.version === '0.4.0', 'CLI version is 0.4.0')
+assert(cliPkg.version === '0.4.1', 'CLI version is 0.4.1')
 
 console.log(`\n=== Results: ${passed} passed, ${failed} failed ===\n`)
 process.exit(failed > 0 ? 1 : 0)
