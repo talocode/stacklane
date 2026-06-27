@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "stacklane": {
+      "command": "node",
+      "args": ["/absolute/path/to/Stacklane/packages/mcp/dist/index.js"],
+      "env": {
+        "STACKLANE_MCP_BASE_URL": "http://localhost:7331",
+        "STACKLANE_MCP_API_KEY": "sk_lane_dev_REPLACE_ME",
+        "STACKLANE_MCP_MODE": "local"
+      }
+    }
+  }
+}

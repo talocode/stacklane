@@ -3,6 +3,7 @@ packages:
   - packages/cli
   - packages/config
   - packages/core
+  - packages/mcp
   - packages/sdk
   - packages/storage
   - packages/types

@@ -1,0 +1,26 @@
+{
+  "name": "@stacklane/mcp",
+  "version": "0.4.1",
+  "description": "Stacklane MCP server: local-first backend/usage/storage primitives for MCP-compatible agents",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "stacklane-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.7.3"
+  },
+  "private": true,
+  "publishConfig": {
+    "access": "restricted"
+  }
+}

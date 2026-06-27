@@ -14,6 +14,7 @@
     "test:v020": "node scripts/test-stacklane-v020.mjs",
     "test:v040": "node scripts/test-stacklane-v040.mjs",
     "test:v041": "node scripts/test-stacklane-v041-runtime.mjs",
+    "test:mcp": "node scripts/test-stacklane-mcp-v010.mjs",
     "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker/docker-compose.yml down",
     "db:migrate": "pnpm --filter @stacklane/api db:migrate",

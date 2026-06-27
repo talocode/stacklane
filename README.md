@@ -40,9 +40,19 @@ Stacklane v0.4.0 is local-first.
 - `docs/API.md`
 - `docs/SDK.md`
 - `docs/CLI.md`
+- `docs/MCP.md`
 - `docs/STORAGE_AND_USAGE.md`
 - `docs/SECURITY.md`
 - `docs/TALOCODE_INTEGRATION.md`
+
+## MCP
+
+Stacklane MCP v0.1 exposes Stacklane primitives as MCP tools for Codex, Claude Code, OpenCode, Cursor, and other MCP-compatible agents. Local-first, stdio transport, no cloud account required. See [docs/MCP.md](docs/MCP.md).
+
+```bash
+pnpm --filter @stacklane/mcp build
+node scripts/test-stacklane-mcp-v010.mjs
+```
 
 ## Status
 

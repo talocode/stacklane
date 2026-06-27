@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.1 (MCP)
+
+- added `@stacklane/mcp` package: open-source MCP server for Stacklane v0.4.1
+- stdio transport for local agent clients (Codex, Claude Code, OpenCode, Cursor)
+- 17 MCP tools: health, config, customers, API keys, usage, assets
+- strict input schemas; raw API key returned only from `stacklane_create_api_key`
+- key hashes never returned by list/revoke/verify tools
+- asset tools reject unsafe filenames and path traversal
+- secrets redacted from errors; no stack traces exposed
+- local-first only; no Supabase, no Resend, no cloud provisioning, no billing
+- added `docs/MCP.md`, `examples/mcp/*`, `scripts/test-stacklane-mcp-v010.mjs`
+- added root `test:mcp` script
+
 ## 0.4.1
 
 - add root `pnpm lint` via `scripts/lint-workspace.mjs`
