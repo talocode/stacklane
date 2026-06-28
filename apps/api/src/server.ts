@@ -93,6 +93,49 @@ import {
 } from './services/provisioning/orchestrator'
 import { MockProvisioningAdapter } from './services/provisioning/mock-adapter'
 import { projectCapabilities, requirePermission, type PolicyAction } from './policy'
+import {
+  createCloudProject,
+  listCloudProjectsByOwner,
+  findCloudProjectById,
+  findCloudProjectBySlug
+} from './repositories/cloud-project-repo'
+import {
+  listCloudApiKeys,
+  createCloudApiKey,
+  revokeCloudApiKey,
+  findCloudApiKeyById,
+  findCloudApiKeyByHash
+} from './repositories/cloud-api-key-repo'
+import {
+  findWalletByProjectId,
+  createWallet,
+  listWalletTransactions
+} from './repositories/cloud-wallet-repo'
+import {
+  listCloudUsageEvents,
+  getCloudUsageSummary,
+  listCloudTopups,
+  createCloudTopup
+} from './repositories/cloud-usage-repo'
+import {
+  toCloudProjectResponse,
+  toCloudApiKeyResponse,
+  toCloudWalletResponse,
+  toCloudWalletTransactionResponse,
+  toCloudUsageEventResponse,
+  toCloudTopupResponse
+} from './services/cloud-formatters'
+import {
+  authenticateTalocodeApiKey,
+  chargeCredits,
+  grantFreeCredits,
+  checkBalance,
+  getWalletWithTransactions,
+  createTopupIntent,
+  confirmTopup,
+  TALOCODE_CLOUD_PRICING,
+  listAllPricing
+} from './services/cloud-billing'
 
 const SESSION_TTL_DAYS = 7
 const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS || 3000)
@@ -773,6 +816,222 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       sendData(res, 200, toProjectResponse(updated, organization ? toOrganizationResponse(organization) : null))
       return
     }
+  }
+
+  // ─── Talocode Cloud Billing Routes ──────────────────────────────────────
+
+  if (req.method === 'POST' && path === '/api/v1/cloud/projects') {
+    const body = await parseBody(req)
+    const name = typeof body.name === 'string' ? body.name.trim() : ''
+    const slug = typeof body.slug === 'string' ? safeSlug(body.slug) : safeSlug(name)
+    if (!name) throw new HttpError(422, 'VALIDATION_ERROR', 'name is required.')
+
+    const existing = await findCloudProjectBySlug(slug)
+    if (existing) throw new HttpError(409, 'DUPLICATE_SLUG', 'A project with this slug already exists.')
+
+    const project = await createCloudProject({ id: makeId('cprj'), ownerId: user.id, name, slug })
+    await grantFreeCredits(project.id)
+    sendData(res, 201, toCloudProjectResponse(project))
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/cloud/projects') {
+    const projects = await listCloudProjectsByOwner(user.id)
+    const data = await Promise.all(projects.map(async (p) => {
+      const wallet = await findWalletByProjectId(p.id)
+      return { ...toCloudProjectResponse(p), balanceCredits: wallet?.balance_credits ?? 0 }
+    }))
+    sendData(res, 200, data)
+    return
+  }
+
+  if (path.startsWith('/api/v1/cloud/projects/')) {
+    const ref = decodeURIComponent(path.replace('/api/v1/cloud/projects/', ''))
+
+    if (ref.endsWith('/api-keys')) {
+      const projectRef = ref.replace('/api-keys', '')
+      const project = await findCloudProjectById(projectRef)
+      if (!project) throw new HttpError(404, 'NOT_FOUND', 'Cloud project not found.', { id: projectRef })
+      if (project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+
+      if (req.method === 'POST') {
+        const body = await parseBody(req)
+        const name = typeof body.name === 'string' ? body.name.trim() : ''
+        const mode = body.mode === 'live' ? 'live' : 'dev'
+        if (!name) throw new HttpError(422, 'VALIDATION_ERROR', 'name is required.')
+        const prefix = `tk_${mode === 'live' ? 'live' : 'dev'}_${Math.random().toString(36).slice(2, 8)}`
+        const secretPart = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
+        const rawKey = `${prefix}.${secretPart}`
+        const keyHash = hashValue(rawKey)
+        const created = await createCloudApiKey({
+          id: makeId('ckey'),
+          projectId: project.id,
+          name,
+          keyPrefix: prefix,
+          keyHash,
+          mode
+        })
+        sendData(res, 201, { key: toCloudApiKeyResponse(created), rawKey })
+        return
+      }
+
+      if (req.method === 'GET') {
+        const keys = await listCloudApiKeys(project.id)
+        sendData(res, 200, keys.map(toCloudApiKeyResponse))
+        return
+      }
+    }
+
+    if (ref.endsWith('/wallet/transactions')) {
+      const projectRef = ref.replace('/wallet/transactions', '')
+      const project = await findCloudProjectById(projectRef)
+      if (!project) throw new HttpError(404, 'NOT_FOUND', 'Cloud project not found.', { id: projectRef })
+      if (project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+      const wallet = await findWalletByProjectId(project.id)
+      if (!wallet) { sendData(res, 200, []); return }
+      const transactions = await listWalletTransactions(wallet.id)
+      sendData(res, 200, transactions.map(toCloudWalletTransactionResponse))
+      return
+    }
+
+    if (ref.endsWith('/wallet')) {
+      const projectRef = ref.replace('/wallet', '')
+      const project = await findCloudProjectById(projectRef)
+      if (!project) throw new HttpError(404, 'NOT_FOUND', 'Cloud project not found.', { id: projectRef })
+      if (project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+      const { wallet, transactions } = await getWalletWithTransactions(project.id)
+      sendData(res, 200, {
+        wallet: toCloudWalletResponse(wallet),
+        transactions: transactions.map(toCloudWalletTransactionResponse)
+      })
+      return
+    }
+
+    if (ref.endsWith('/topups')) {
+      const projectRef = ref.replace('/topups', '')
+      const project = await findCloudProjectById(projectRef)
+      if (!project) throw new HttpError(404, 'NOT_FOUND', 'Cloud project not found.', { id: projectRef })
+      if (project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+
+      if (req.method === 'POST') {
+        const body = await parseBody(req)
+        const amountUsd = typeof body.amountUsd === 'number' ? body.amountUsd : Number(body.amountUsd || 0)
+        if (!Number.isFinite(amountUsd) || amountUsd <= 0) throw new HttpError(422, 'VALIDATION_ERROR', 'amountUsd must be a positive number.')
+        const result = await createTopupIntent({ projectId: project.id, amountUsd, provider: body.provider })
+        sendData(res, 201, result)
+        return
+      }
+
+      if (req.method === 'GET') {
+        const topups = await listCloudTopups(project.id)
+        sendData(res, 200, topups.map(toCloudTopupResponse))
+        return
+      }
+    }
+
+    if (ref.endsWith('/usage/summary')) {
+      const projectRef = ref.replace('/usage/summary', '')
+      const project = await findCloudProjectById(projectRef)
+      if (!project) throw new HttpError(404, 'NOT_FOUND', 'Cloud project not found.', { id: projectRef })
+      if (project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+      const from = url.searchParams.get('from') || undefined
+      const to = url.searchParams.get('to') || undefined
+      const summary = await getCloudUsageSummary(project.id, from, to)
+      sendData(res, 200, summary)
+      return
+    }
+
+    if (ref.endsWith('/usage')) {
+      const projectRef = ref.replace('/usage', '')
+      const project = await findCloudProjectById(projectRef)
+      if (!project) throw new HttpError(404, 'NOT_FOUND', 'Cloud project not found.', { id: projectRef })
+      if (project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+      const events = await listCloudUsageEvents(project.id, {
+        product: url.searchParams.get('product') || undefined,
+        action: url.searchParams.get('action') || undefined,
+        from: url.searchParams.get('from') || undefined,
+        to: url.searchParams.get('to') || undefined
+      })
+      sendData(res, 200, events.map(toCloudUsageEventResponse))
+      return
+    }
+
+    const project = await findCloudProjectById(ref)
+    if (!project) throw new HttpError(404, 'NOT_FOUND', 'Cloud project not found.', { id: ref })
+    if (project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+    const wallet = await findWalletByProjectId(project.id)
+    sendData(res, 200, {
+      ...toCloudProjectResponse(project),
+      balanceCredits: wallet?.balance_credits ?? 0
+    })
+    return
+  }
+
+  if (req.method === 'POST' && path.startsWith('/api/v1/cloud/api-keys/') && path.endsWith('/revoke')) {
+    const keyId = decodeURIComponent(path.replace('/api/v1/cloud/api-keys/', '').replace('/revoke', ''))
+    const key = await findCloudApiKeyById(keyId)
+    if (!key) throw new HttpError(404, 'NOT_FOUND', 'API key not found.', { id: keyId })
+    const project = await findCloudProjectById(key.project_id)
+    if (!project || project.owner_id !== user.id) throw new HttpError(403, 'FORBIDDEN', 'Access denied.')
+    const revoked = await revokeCloudApiKey(keyId)
+    sendData(res, 200, { key: toCloudApiKeyResponse(revoked!) })
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/cloud/topups/confirm') {
+    const body = await parseBody(req)
+    const topupId = typeof body.topupId === 'string' ? body.topupId : ''
+    if (!topupId) throw new HttpError(422, 'VALIDATION_ERROR', 'topupId is required.')
+    const result = await confirmTopup(topupId, body.providerReference)
+    sendData(res, 200, { topup: toCloudTopupResponse(result.topup), wallet: toCloudWalletResponse(result.wallet) })
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/cloud/pricing') {
+    sendData(res, 200, listAllPricing())
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/cloud/usage/charge') {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+    const body = await parseBody(req)
+    const product = typeof body.product === 'string' ? body.product.trim() : ''
+    const action = typeof body.action === 'string' ? body.action.trim() : ''
+    if (!product || !action) throw new HttpError(422, 'VALIDATION_ERROR', 'product and action are required.')
+
+    const result = await chargeCredits({
+      projectId: apiKey.project_id,
+      apiKeyId: apiKey.id,
+      product,
+      action,
+      requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
+      idempotencyKey: typeof body.idempotencyKey === 'string' ? body.idempotencyKey : undefined,
+      metadata: typeof body.metadata === 'object' && body.metadata ? (body.metadata as Record<string, unknown>) : undefined
+    })
+
+    if (!result.success) {
+      sendData(res, 402, {
+        ok: false,
+        error: 'insufficient_credits',
+        required: result.event.credits,
+        available: result.remainingCredits,
+        event: result.event
+      })
+      return
+    }
+
+    sendData(res, 200, { ok: true, event: result.event, remainingCredits: result.remainingCredits })
+    return
   }
 
   throw new HttpError(404, 'NOT_FOUND', 'Route not found.', { method: req.method, path })
