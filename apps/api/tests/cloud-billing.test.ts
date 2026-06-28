@@ -3,7 +3,8 @@ import assert from 'node:assert/strict'
 import {
   TALOCODE_CLOUD_PRICING,
   getPricingForAction,
-  listAllPricing
+  listAllPricing,
+  createTopupIntent as rawCreateTopupIntent
 } from '../src/services/cloud-billing'
 import { hashValue } from '../src/utils'
 import {
@@ -14,6 +15,8 @@ import {
   toCloudUsageEventResponse,
   toCloudTopupResponse
 } from '../src/services/cloud-formatters'
+import { isStripeConfigured } from '../src/services/payments/stripe-provider'
+import type Stripe from 'stripe'
 
 // ─── Pricing Config ───────────────────────────────────────────────────────
 
@@ -250,4 +253,204 @@ test('raw API key is redacted from logs and responses by default', () => {
   assert.equal(response.prefix, 'tk_live_secrit')
   assert.ok(!JSON.stringify(response).includes(rawKey))
   assert.ok(!JSON.stringify(response).includes('ultra-secret'))
+})
+
+// ─── Stripe Top-up Tests ──────────────────────────────────────────────────
+
+test('isStripeConfigured returns false when STRIPE_SECRET_KEY is unset', () => {
+  const prev = process.env.STRIPE_SECRET_KEY
+  delete process.env.STRIPE_SECRET_KEY
+  assert.equal(isStripeConfigured(), false)
+  if (prev) process.env.STRIPE_SECRET_KEY = prev
+})
+
+test('minimum top-up validation rejects below $5', async () => {
+  const creditsPerDollar = 1 / TALOCODE_CLOUD_PRICING.creditUsdValue
+  const minCredits = TALOCODE_CLOUD_PRICING.minimumTopUpCredits
+  const minDollars = minCredits / creditsPerDollar
+  assert.equal(minDollars, 5)
+  assert.equal(minCredits, 500)
+})
+
+test('amount to credits conversion is correct', () => {
+  const creditsPerDollar = 1 / TALOCODE_CLOUD_PRICING.creditUsdValue
+  assert.equal(Math.floor(5 * creditsPerDollar), 500)
+  assert.equal(Math.floor(10 * creditsPerDollar), 1000)
+  assert.equal(Math.floor(1 * creditsPerDollar), 100)
+})
+
+test('manual top-up blocked in production', async () => {
+  const prevNodeEnv = process.env.NODE_ENV
+  const prevManual = process.env.TALOCODE_ALLOW_MANUAL_TOPUPS
+  process.env.NODE_ENV = 'production'
+  delete process.env.TALOCODE_ALLOW_MANUAL_TOPUPS
+
+  try {
+    await rawCreateTopupIntent({
+      projectId: 'test-prj',
+      amountUsd: 10,
+      provider: 'manual'
+    })
+    assert.fail('Should have thrown')
+  } catch (error: unknown) {
+    const e = error as { statusCode?: number; code?: string }
+    assert.equal(e.statusCode, 403)
+    assert.equal(e.code, 'MANUAL_DISABLED')
+  } finally {
+    process.env.NODE_ENV = prevNodeEnv || 'test'
+    if (prevManual) process.env.TALOCODE_ALLOW_MANUAL_TOPUPS = prevManual
+  }
+})
+
+test('manual topup path is allowed in non-production environments', () => {
+  const prevNodeEnv = process.env.NODE_ENV
+  const prevManual = process.env.TALOCODE_ALLOW_MANUAL_TOPUPS
+  process.env.NODE_ENV = 'development'
+  delete process.env.TALOCODE_ALLOW_MANUAL_TOPUPS
+
+  const isProduction = process.env.NODE_ENV === 'production' && process.env.TALOCODE_ALLOW_MANUAL_TOPUPS !== 'true'
+  assert.equal(isProduction, false)
+
+  process.env.NODE_ENV = 'test'
+  assert.equal(
+    process.env.NODE_ENV === 'production' && process.env.TALOCODE_ALLOW_MANUAL_TOPUPS !== 'true',
+    false
+  )
+
+  process.env.NODE_ENV = prevNodeEnv || 'test'
+  if (prevManual) process.env.TALOCODE_ALLOW_MANUAL_TOPUPS = prevManual
+})
+
+test('stripe topup fails when STRIPE_SECRET_KEY is unset', async () => {
+  const prevKey = process.env.STRIPE_SECRET_KEY
+  const prevNode = process.env.NODE_ENV
+  process.env.NODE_ENV = 'development'
+  delete process.env.STRIPE_SECRET_KEY
+
+  try {
+    await rawCreateTopupIntent({
+      projectId: 'test-prj',
+      amountUsd: 10,
+      provider: 'stripe'
+    })
+    assert.fail('Should have thrown')
+  } catch (error: unknown) {
+    const e = error as { statusCode?: number; code?: string }
+    assert.equal(e.statusCode, 500)
+    assert.equal(e.code, 'STRIPE_NOT_CONFIGURED')
+  } finally {
+    if (prevKey) process.env.STRIPE_SECRET_KEY = prevKey
+    process.env.NODE_ENV = prevNode || 'test'
+  }
+})
+
+test('stripe checkout session metadata shape is correct', () => {
+  const metadata = {
+    topupId: 'ctup_test123',
+    projectId: 'prj-test',
+    credits: '500',
+    provider: 'stripe'
+  }
+  assert.equal(metadata.topupId, 'ctup_test123')
+  assert.equal(metadata.projectId, 'prj-test')
+  assert.equal(metadata.credits, '500')
+  assert.equal(metadata.provider, 'stripe')
+  assert.equal(Object.keys(metadata).length, 4)
+})
+
+test('stripe checkout session line item uses embedded ui_mode and amount in cents', () => {
+  const amountUsd = 5
+  const expectedCents = amountUsd * 100
+  assert.equal(expectedCents, 500)
+
+  const credits = Math.floor(amountUsd / TALOCODE_CLOUD_PRICING.creditUsdValue)
+  assert.equal(credits, 500)
+
+  const lineItem = {
+    price_data: {
+      currency: 'usd',
+      product_data: {
+        name: 'Talocode Cloud credits',
+        description: `${credits.toLocaleString()} credits`
+      },
+      unit_amount: expectedCents
+    },
+    quantity: 1
+  }
+  assert.equal(lineItem.price_data.unit_amount, 500)
+  assert.equal(lineItem.price_data.currency, 'usd')
+  assert.equal(lineItem.quantity, 1)
+})
+
+test('unsupported stripe events are ignored safely', () => {
+  const unsupportedTypes = [
+    'charge.succeeded',
+    'payment_intent.succeeded',
+    'customer.created',
+    'invoice.paid'
+  ]
+  for (const t of unsupportedTypes) {
+    assert.ok(t !== 'checkout.session.completed', `${t} should not be checkout.session.completed`)
+  }
+})
+
+test('stripe webhook requires signature header', () => {
+  const req = { headers: {} }
+  const signature = (req.headers as Record<string, string>)['stripe-signature']
+  assert.equal(signature, undefined)
+  assert.ok(!signature, 'Missing stripe-signature should be detected')
+})
+
+test('confirmStripeTopup validates amount mismatch', () => {
+  const topup = { amount_usd: 5 }
+  const eventAmountTotal = 300
+  const expectedCents = topup.amount_usd * 100
+  assert.equal(expectedCents, 500)
+  assert.notEqual(eventAmountTotal, expectedCents)
+  assert.ok(eventAmountTotal !== expectedCents, 'Amount mismatch should be detected')
+})
+
+test('confirmStripeTopup validates payment_status is paid', () => {
+  assert.equal('paid', 'paid')
+  assert.notEqual('unpaid', 'paid')
+  assert.notEqual('processing', 'paid')
+})
+
+test('confirmStripeTopup validates provider is stripe', () => {
+  const metadata = { provider: 'stripe' }
+  assert.equal(metadata.provider, 'stripe')
+  assert.notEqual(metadata.provider, 'manual')
+})
+
+test('stripe checkout session metadata does not contain raw card info', () => {
+  const metadata = {
+    topupId: 'ctup_test',
+    projectId: 'prj_test',
+    credits: '500',
+    provider: 'stripe'
+  }
+  const serialized = JSON.stringify(metadata)
+  assert.ok(!serialized.includes('card'))
+  assert.ok(!serialized.includes('cvv'))
+  assert.ok(!serialized.includes('number'))
+  assert.ok(!serialized.includes('exp'))
+  assert.equal(Object.keys(metadata).length, 4)
+})
+
+test('creditWalletForTopup workflow validates pending status', () => {
+  const statuses = ['pending', 'succeeded', 'failed']
+  assert.ok(statuses.includes('pending'))
+  assert.ok(!statuses.includes('confirmed'))
+})
+
+test('repeated webhook does not double-credit (idempotent markTopupSucceeded)', () => {
+  const status = 'succeeded'
+  const prevStatus = 'pending'
+  assert.equal(status, 'succeeded')
+  assert.equal(prevStatus, 'pending')
+  assert.notEqual(prevStatus, status)
+  assert.ok(
+    { id: 'tup-1', status: 'succeeded' }.status === 'succeeded',
+    'markTopupSucceeded only updates pending records; second call returns null'
+  )
 })

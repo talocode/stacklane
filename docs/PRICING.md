@@ -48,7 +48,10 @@
 
 - Minimum top-up: $5 (500 credits)
 - Top-ups are prepaid and non-refundable
-- v0.1 supports manual/test top-ups in development mode
+- Payment via **Stripe Embedded Checkout** — customers enter card details in an embedded form
+- Manual/test top-ups available in development mode only
+- Webhook verifies payment before crediting wallet
+- Duplicate webhook events do not double-credit
 
 ## Pricing Endpoint
 

@@ -149,3 +149,36 @@ export async function listCloudTopups(projectId: string, limit = 20) {
   )
   return result.rows
 }
+
+export async function findTopupByProviderReference(providerRef: string) {
+  const result = await db.query<CloudTopupRecord>(
+    `SELECT id, project_id, provider, provider_reference, amount_usd, credits, status, created_at, updated_at
+     FROM cloud_topups
+     WHERE provider_reference = $1
+     LIMIT 1`,
+    [providerRef]
+  )
+  return result.rows[0] || null
+}
+
+export async function markTopupSucceeded(id: string) {
+  const result = await db.query<CloudTopupRecord>(
+    `UPDATE cloud_topups
+     SET status = 'succeeded', updated_at = now()
+     WHERE id = $1 AND status = 'pending'
+     RETURNING id, project_id, provider, provider_reference, amount_usd, credits, status, created_at, updated_at`,
+    [id]
+  )
+  return result.rows[0] || null
+}
+
+export async function markTopupFailed(id: string) {
+  const result = await db.query<CloudTopupRecord>(
+    `UPDATE cloud_topups
+     SET status = 'failed', updated_at = now()
+     WHERE id = $1 AND status = 'pending'
+     RETURNING id, project_id, provider, provider_reference, amount_usd, credits, status, created_at, updated_at`,
+    [id]
+  )
+  return result.rows[0] || null
+}

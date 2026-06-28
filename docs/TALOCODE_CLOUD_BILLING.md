@@ -78,9 +78,33 @@ curl https://api.talocode.xyz/v1/browser/check \
 }
 ```
 
+## Top-ups
+
+Top-ups use **Stripe Embedded Checkout**. Customers enter payment details in an embedded form without leaving the site.
+
+- **Minimum top-up:** $5 = 500 credits
+- **Provider:** Stripe (production) or manual (development only)
+- **API returns:** `clientSecret` + `publishableKey` for frontend to render Stripe Embedded Checkout
+- **Webhook:** `POST /api/v1/cloud/billing/stripe/webhook` — verifies payment and credits wallet
+- **Idempotent:** Duplicate webhooks do not double-credit
+
+### Example top-up request
+
+```bash
+curl -X POST http://localhost:4000/api/v1/cloud/projects/{projectId}/topups \
+  -H "Content-Type: application/json" \
+  -H "Cookie: sl_session=..." \
+  -d '{"amountUsd": 5, "provider": "stripe"}'
+```
+
+Response includes `stripe.clientSecret` — use it with Stripe's `<EmbeddedCheckout>` component.
+
+See [STRIPE_TOPUPS.md](./STRIPE_TOPUPS.md) for full integration details.
+
 ## Security
 
 - Raw API keys are never stored or logged
 - Authorization headers are redacted from logs
 - Usage events do not store sensitive request bodies
 - No raw card numbers or CVV are ever accepted or stored
+- Payment processing is PCI-compliant via Stripe

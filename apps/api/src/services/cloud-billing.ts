@@ -13,9 +13,19 @@ import {
 } from '../repositories/cloud-wallet-repo'
 import {
   createCloudUsageEvent,
-  findUsageEventByIdempotencyKey
+  findUsageEventByIdempotencyKey,
+  createCloudTopup,
+  findTopupByProviderReference,
+  markTopupSucceeded,
+  markTopupFailed
 } from '../repositories/cloud-usage-repo'
 import { HttpError } from '../http'
+import {
+  isStripeConfigured,
+  getStripePublishableKey,
+  createStripeEmbeddedCheckoutSession,
+  constructStripeWebhookEvent
+} from './payments/stripe-provider'
 
 export interface ChargeResult {
   success: boolean
@@ -218,49 +228,117 @@ export async function createTopupIntent(input: {
     throw new HttpError(422, 'MINIMUM_TOPUP', `Minimum top-up is $${(TALOCODE_CLOUD_PRICING.minimumTopUpCredits / creditsPerDollar).toFixed(2)} (${TALOCODE_CLOUD_PRICING.minimumTopUpCredits} credits).`)
   }
 
-  const { createCloudTopup } = await import('../repositories/cloud-usage-repo')
+  const provider = input.provider || 'stripe'
+  const isProduction = process.env.NODE_ENV === 'production' && process.env.TALOCODE_ALLOW_MANUAL_TOPUPS !== 'true'
+
+  if (provider === 'manual') {
+    if (isProduction) {
+      throw new HttpError(403, 'MANUAL_DISABLED', 'Manual top-ups are not available in production.')
+    }
+    const topup = await createCloudTopup({
+      id: makeId('ctup'),
+      projectId: input.projectId,
+      provider: 'manual',
+      amountUsd: input.amountUsd,
+      credits,
+      status: 'pending'
+    })
+    return {
+      topup,
+      creditsPerDollar,
+      message: `In development mode, call confirmTopup with manual provider to credit the wallet.`
+    }
+  }
+
+  if (!isStripeConfigured()) {
+    throw new HttpError(500, 'STRIPE_NOT_CONFIGURED', 'Stripe is not configured. Set STRIPE_SECRET_KEY for production top-ups.')
+  }
 
   const topup = await createCloudTopup({
     id: makeId('ctup'),
     projectId: input.projectId,
-    provider: input.provider || 'manual',
+    provider: 'stripe',
     amountUsd: input.amountUsd,
     credits,
     status: 'pending'
   })
 
+  const checkout = await createStripeEmbeddedCheckoutSession({
+    topupId: topup.id,
+    projectId: input.projectId,
+    amountUsd: input.amountUsd,
+    credits
+  })
+
   return {
-    topup,
-    creditsPerDollar,
-    confirmationRequired: true,
-    message: `To confirm the top-up, call confirmTopup with the topup ID. In development, use confirmTopup with provider=manual.`
+    topup: {
+      id: topup.id,
+      projectId: topup.project_id,
+      provider: topup.provider,
+      amountUsd: topup.amount_usd,
+      credits: topup.credits,
+      status: topup.status,
+      createdAt: topup.created_at,
+      updatedAt: topup.updated_at
+    },
+    stripe: {
+      sessionId: checkout.sessionId,
+      clientSecret: checkout.clientSecret,
+      publishableKey: getStripePublishableKey()
+    },
+    creditsPerDollar
   }
 }
 
 export async function confirmTopup(topupId: string, providerRef?: string) {
-  const { db } = await import('../db')
-  const result = await db.query(
-    `UPDATE cloud_topups
-     SET status = 'succeeded', provider_reference = COALESCE($1, provider_reference), updated_at = now()
-     WHERE id = $2 AND status = 'pending'
-     RETURNING id, project_id, provider, provider_reference, amount_usd, credits, status, created_at, updated_at`,
-    [providerRef || null, topupId]
-  )
-  const topup = result.rows[0]
-  if (!topup) throw new HttpError(404, 'TOPUP_NOT_FOUND', 'Top-up not found or already confirmed.')
+  return creditWalletForTopup(topupId, providerRef)
+}
 
-  const wallet = await addCredits(topup.project_id, topup.credits)
+export async function creditWalletForTopup(topupId: string, providerRef?: string) {
+  const result = await markTopupSucceeded(topupId)
+  if (!result) throw new HttpError(404, 'TOPUP_NOT_FOUND', 'Top-up not found or already confirmed.')
+
+  const wallet = await addCredits(result.project_id, result.credits)
   await createWalletTransaction({
     id: makeId('ctxn'),
     walletId: wallet.id,
     type: 'topup',
-    creditsDelta: topup.credits,
+    creditsDelta: result.credits,
     balanceAfter: wallet.balance_credits,
-    reference: topup.id,
-    metadata: { provider: topup.provider, amountUsd: topup.amount_usd }
+    reference: result.id,
+    metadata: { provider: result.provider, amountUsd: result.amount_usd }
   })
 
-  return { topup, wallet }
+  return { topup: result, wallet }
+}
+
+export async function confirmStripeTopup(event: {
+  id: string
+  metadata: Record<string, string>
+  amount_total: number | null
+  payment_status: string
+}) {
+  const { topupId, projectId, credits: creditsStr, provider } = event.metadata
+  if (!topupId || !projectId || provider !== 'stripe') {
+    return null
+  }
+
+  if (event.payment_status !== 'paid') {
+    return null
+  }
+
+  const topup = await findTopupByProviderReference(event.id)
+  if (!topup || topup.status !== 'pending' || topup.provider !== 'stripe') {
+    return null
+  }
+
+  const expectedCents = topup.amount_usd * 100
+  if (event.amount_total !== null && event.amount_total !== expectedCents) {
+    await markTopupFailed(topup.id)
+    return null
+  }
+
+  return creditWalletForTopup(topup.id, event.id)
 }
 
 export async function checkBalance(projectId: string) {

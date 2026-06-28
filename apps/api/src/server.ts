@@ -133,9 +133,13 @@ import {
   getWalletWithTransactions,
   createTopupIntent,
   confirmTopup,
+  confirmStripeTopup,
   TALOCODE_CLOUD_PRICING,
   listAllPricing
 } from './services/cloud-billing'
+import {
+  constructStripeWebhookEvent
+} from './services/payments/stripe-provider'
 
 const SESSION_TTL_DAYS = 7
 const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS || 3000)
@@ -1031,6 +1035,50 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     }
 
     sendData(res, 200, { ok: true, event: result.event, remainingCredits: result.remainingCredits })
+    return
+  }
+
+  // ─── Stripe Webhook (no session auth) ──────────────────────────────────
+
+  if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {
+    const rawBody = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = []
+      req.on('data', (chunk: Buffer) => chunks.push(chunk))
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+      req.on('error', reject)
+    })
+
+    const signature = typeof req.headers['stripe-signature'] === 'string' ? req.headers['stripe-signature'] : ''
+    if (!signature) {
+      sendJson(res, 400, { error: { code: 'MISSING_SIGNATURE', message: 'Missing Stripe-Signature header.' } })
+      return
+    }
+
+    try {
+      const event = await constructStripeWebhookEvent(rawBody, signature)
+
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object as Record<string, unknown>
+        const topupResult = await confirmStripeTopup({
+          id: session.id as string,
+          metadata: (session.metadata || {}) as Record<string, string>,
+          amount_total: (session.amount_total as number | null) ?? null,
+          payment_status: (session.payment_status as string) || ''
+        })
+        if (!topupResult) {
+          sendJson(res, 200, { received: true, skipped: true })
+          return
+        }
+      }
+
+      sendJson(res, 200, { received: true })
+    } catch (error) {
+      if (error instanceof HttpError) {
+        sendJson(res, error.statusCode, { error: { code: error.code, message: error.message } })
+        return
+      }
+      sendJson(res, 400, { error: { code: 'WEBHOOK_ERROR', message: 'Webhook processing failed.' } })
+    }
     return
   }
 
