@@ -113,13 +113,18 @@ export async function chargeCredits(input: {
   requestId?: string
   idempotencyKey?: string
   metadata?: Record<string, unknown>
+  credits?: number
 }): Promise<ChargeResult> {
-  const pricing = getPricingForAction(input.product, input.action)
-  if (pricing === null) {
-    throw new HttpError(422, 'UNKNOWN_PRICING', `No pricing defined for ${input.product}:${input.action}.`)
+  let requiredCredits: number
+  if (input.credits !== undefined && input.credits > 0) {
+    requiredCredits = input.credits
+  } else {
+    const pricing = getPricingForAction(input.product, input.action)
+    if (pricing === null) {
+      throw new HttpError(422, 'UNKNOWN_PRICING', `No pricing defined for ${input.product}:${input.action}.`)
+    }
+    requiredCredits = pricing
   }
-
-  const requiredCredits = pricing
 
   if (input.idempotencyKey) {
     const existing = await findUsageEventByIdempotencyKey(input.idempotencyKey)

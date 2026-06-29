@@ -49,6 +49,7 @@ export const TALOCODE_CLOUD_PRICING = {
       "chat.fast": 2,
       "chat.auto": 3,
       "chat.coding": 5,
+      "chat.completions": 1,
       "compression.logs": 1,
       "compression.diff": 1,
       "compression.trace": 2

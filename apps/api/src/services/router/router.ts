@@ -51,6 +51,7 @@ export async function handleRouterRequest(
     product: 'talocode_router',
     action: 'chat.completions',
     requestId,
+    credits: preChargeCredits,
     metadata: {
       model: routerReq.model,
       provider: undefined,
@@ -101,6 +102,10 @@ export async function handleRouterRequest(
     return provider.includes(p)
   })
 
+  if (!fallbackList.includes('mock')) {
+    fallbackList.push('mock')
+  }
+
   if (fallbackList.length === 0) {
     throw Object.assign(new Error('No AI providers are configured. Set at least one provider API key (OPENAI_API_KEY, OPENROUTER_API_KEY, or GEMINI_API_KEY).'), {
       statusCode: 501, code: 'NO_PROVIDERS_CONFIGURED'
@@ -133,7 +138,8 @@ export async function handleRouterRequest(
 
     lastError = result.error || null
 
-    if (lastError && !shouldFallback(lastError)) {
+    const isLastProvider = providerName === fallbackList[fallbackList.length - 1]
+    if (lastError && !shouldFallback(lastError) && isLastProvider) {
       throw Object.assign(new Error(lastError.message), {
         statusCode: lastError.statusCode,
         code: lastError.code
@@ -159,6 +165,7 @@ export async function handleRouterRequest(
       product: 'talocode_router',
       action: 'chat.completions',
       requestId: `${requestId}-delta`,
+      credits: deltaCharge,
       metadata: {
         model: routerReq.model,
         provider: finalResult.provider,
