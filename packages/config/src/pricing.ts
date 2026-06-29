@@ -44,6 +44,14 @@ export const TALOCODE_CLOUD_PRICING = {
     worklane: {
       "workflow.small": 10,
       "workflow.large": 25
+    },
+    talocode_router: {
+      "chat.fast": 2,
+      "chat.auto": 3,
+      "chat.coding": 5,
+      "compression.logs": 1,
+      "compression.diff": 1,
+      "compression.trace": 2
     }
   }
 } as const

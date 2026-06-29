@@ -140,6 +140,14 @@ import {
 import {
   constructStripeWebhookEvent
 } from './services/payments/stripe-provider'
+import {
+  handleRouterRequest,
+  getModels,
+  getRouterHealth,
+  getRouterProviders,
+  authenticateTalocodeApiKey as routerAuthenticateKey
+} from './services/router/router'
+import { isCompressionEnabled } from './services/router/config'
 
 const SESSION_TTL_DAYS = 7
 const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS || 3000)
@@ -216,6 +224,206 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
   if (req.method === 'GET' && path === '/api/v1/config/status') {
     sendJson(res, 200, { ok: true, config: getConfigStatus() })
+    return
+  }
+
+  // ─── Public / API-key-authenticated cloud routes (before session check) ───
+
+  if (req.method === 'GET' && path === '/api/v1/cloud/pricing') {
+    sendData(res, 200, listAllPricing())
+    return
+  }
+
+  if (req.method === 'POST' && path === '/api/v1/cloud/usage/charge') {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+    const body = await parseBody(req)
+    const product = typeof body.product === 'string' ? body.product.trim() : ''
+    const action = typeof body.action === 'string' ? body.action.trim() : ''
+    if (!product || !action) throw new HttpError(422, 'VALIDATION_ERROR', 'product and action are required.')
+
+    const result = await chargeCredits({
+      projectId: apiKey.project_id,
+      apiKeyId: apiKey.id,
+      product,
+      action,
+      requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
+      idempotencyKey: typeof body.idempotencyKey === 'string' ? body.idempotencyKey : undefined,
+      metadata: typeof body.metadata === 'object' && body.metadata ? (body.metadata as Record<string, unknown>) : undefined
+    })
+
+    if (!result.success) {
+      sendData(res, 402, {
+        ok: false,
+        error: 'insufficient_credits',
+        required: result.event.credits,
+        available: result.remainingCredits,
+        event: result.event
+      })
+      return
+    }
+
+    sendData(res, 200, { ok: true, event: result.event, remainingCredits: result.remainingCredits })
+    return
+  }
+
+  // ─── Stripe Webhook (no session auth) ──────────────────────────────────
+
+  if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {
+    const rawBody = await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = []
+      req.on('data', (chunk: Buffer) => chunks.push(chunk))
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+      req.on('error', reject)
+    })
+
+    const signature = typeof req.headers['stripe-signature'] === 'string' ? req.headers['stripe-signature'] : ''
+    if (!signature) {
+      sendJson(res, 400, { error: { code: 'MISSING_SIGNATURE', message: 'Missing Stripe-Signature header.' } })
+      return
+    }
+
+    try {
+      const event = await constructStripeWebhookEvent(rawBody, signature)
+
+      if (event.type === 'checkout.session.completed') {
+        const session = event.data.object as Record<string, unknown>
+        const topupResult = await confirmStripeTopup({
+          id: session.id as string,
+          metadata: (session.metadata || {}) as Record<string, string>,
+          amount_total: (session.amount_total as number | null) ?? null,
+          payment_status: (session.payment_status as string) || ''
+        })
+        if (!topupResult) {
+          sendJson(res, 200, { received: true, skipped: true })
+          return
+        }
+      }
+
+      sendJson(res, 200, { received: true })
+    } catch (error) {
+      if (error instanceof HttpError) {
+        sendJson(res, error.statusCode, { error: { code: error.code, message: error.message } })
+        return
+      }
+      sendJson(res, 400, { error: { code: 'WEBHOOK_ERROR', message: 'Webhook processing failed.' } })
+    }
+    return
+  }
+
+  // ─── Talocode Cloud Router (API-key authenticated, before session check) ──
+
+  if (req.method === 'GET' && path === '/api/v1/cloud/router/health') {
+    const health = await getRouterHealth()
+    sendData(res, 200, health)
+    return
+  }
+
+  if (req.method === 'GET' && path === '/api/v1/cloud/router/providers') {
+    const providers = await getRouterProviders()
+    sendData(res, 200, providers)
+    return
+  }
+
+  if (req.method === 'GET' && path === '/v1/models') {
+    const models = await getModels()
+    sendData(res, 200, models)
+    return
+  }
+
+  if (req.method === 'POST' && path === '/v1/chat/completions') {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const body = await parseBody(req)
+    const model = typeof body.model === 'string' ? body.model.trim() : ''
+    if (!model) throw new HttpError(422, 'VALIDATION_ERROR', 'model is required.')
+    if (!Array.isArray(body.messages) || body.messages.length === 0) {
+      throw new HttpError(422, 'VALIDATION_ERROR', 'messages array is required and must not be empty.')
+    }
+    if (body.stream === true) {
+      throw new HttpError(422, 'STREAM_NOT_SUPPORTED', 'Streaming is not supported in v0.1. Use non-streaming requests.')
+    }
+
+    const messages = body.messages.map((m: unknown) => {
+      const msg = m as Record<string, unknown>
+      return { role: String(msg.role || ''), content: String(msg.content || '') }
+    })
+
+    const routerReq = {
+      model,
+      messages,
+      max_tokens: typeof body.max_tokens === 'number' ? body.max_tokens : undefined,
+      temperature: typeof body.temperature === 'number' ? body.temperature : undefined,
+      stream: false,
+      requestId: typeof body.requestId === 'string' ? body.requestId : undefined
+    }
+
+    try {
+      const result = await handleRouterRequest(rawKey, routerReq)
+
+      const wallet = await checkBalance(result.charge.projectId as string)
+
+      const headers: Record<string, string> = {
+        'x-talocode-request-id': result.charge.requestId,
+        'x-talocode-project-id': result.charge.projectId || '',
+        'x-talocode-provider': result.charge.provider,
+        'x-talocode-model': result.charge.model,
+        'x-talocode-credits-charged': String(result.charge.creditsCharged),
+        'x-talocode-wallet-balance': String(wallet.balanceCredits)
+      }
+
+      if (result.compressionApplied) {
+        headers['x-talocode-compression-applied'] = 'true'
+        headers['x-talocode-compression-saved-estimate'] = String(result.compressionSavedEstimate || 0)
+      }
+
+      res.writeHead(200, {
+        'content-type': 'application/json; charset=utf-8',
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET,POST,OPTIONS',
+        'access-control-allow-headers': 'content-type,authorization,x-api-key',
+        ...headers
+      })
+
+      res.end(JSON.stringify(result.response))
+    } catch (error: unknown) {
+      if (error instanceof HttpError) {
+        sendError(res, error)
+        return
+      }
+      const err = error as { statusCode?: number; code?: string; message?: string; required?: number; available?: number }
+      if (err.code === 'insufficient_credits' || err.code === 'insufficient_credits') {
+        sendJson(res, 402, {
+          error: {
+            code: 'insufficient_credits',
+            message: err.message || 'Insufficient Talocode Cloud credits.',
+            required: err.required || 0,
+            available: err.available || 0
+          }
+        })
+        return
+      }
+      const statusCode = err.statusCode || 500
+      const code = err.code || 'INTERNAL_ERROR'
+      sendJson(res, statusCode, { error: { code, message: err.message || 'Router error.' } })
+    }
     return
   }
 
@@ -988,97 +1196,6 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     if (!topupId) throw new HttpError(422, 'VALIDATION_ERROR', 'topupId is required.')
     const result = await confirmTopup(topupId, body.providerReference)
     sendData(res, 200, { topup: toCloudTopupResponse(result.topup), wallet: toCloudWalletResponse(result.wallet) })
-    return
-  }
-
-  if (req.method === 'GET' && path === '/api/v1/cloud/pricing') {
-    sendData(res, 200, listAllPricing())
-    return
-  }
-
-  if (req.method === 'POST' && path === '/api/v1/cloud/usage/charge') {
-    let rawKey: string
-    const authHeader = req.headers['authorization'] || ''
-    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-      rawKey = authHeader.slice(7)
-    } else if (typeof req.headers['x-api-key'] === 'string') {
-      rawKey = req.headers['x-api-key'] as string
-    } else {
-      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
-    }
-
-    const apiKey = await authenticateTalocodeApiKey(rawKey)
-    const body = await parseBody(req)
-    const product = typeof body.product === 'string' ? body.product.trim() : ''
-    const action = typeof body.action === 'string' ? body.action.trim() : ''
-    if (!product || !action) throw new HttpError(422, 'VALIDATION_ERROR', 'product and action are required.')
-
-    const result = await chargeCredits({
-      projectId: apiKey.project_id,
-      apiKeyId: apiKey.id,
-      product,
-      action,
-      requestId: typeof body.requestId === 'string' ? body.requestId : undefined,
-      idempotencyKey: typeof body.idempotencyKey === 'string' ? body.idempotencyKey : undefined,
-      metadata: typeof body.metadata === 'object' && body.metadata ? (body.metadata as Record<string, unknown>) : undefined
-    })
-
-    if (!result.success) {
-      sendData(res, 402, {
-        ok: false,
-        error: 'insufficient_credits',
-        required: result.event.credits,
-        available: result.remainingCredits,
-        event: result.event
-      })
-      return
-    }
-
-    sendData(res, 200, { ok: true, event: result.event, remainingCredits: result.remainingCredits })
-    return
-  }
-
-  // ─── Stripe Webhook (no session auth) ──────────────────────────────────
-
-  if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {
-    const rawBody = await new Promise<string>((resolve, reject) => {
-      const chunks: Buffer[] = []
-      req.on('data', (chunk: Buffer) => chunks.push(chunk))
-      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
-      req.on('error', reject)
-    })
-
-    const signature = typeof req.headers['stripe-signature'] === 'string' ? req.headers['stripe-signature'] : ''
-    if (!signature) {
-      sendJson(res, 400, { error: { code: 'MISSING_SIGNATURE', message: 'Missing Stripe-Signature header.' } })
-      return
-    }
-
-    try {
-      const event = await constructStripeWebhookEvent(rawBody, signature)
-
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Record<string, unknown>
-        const topupResult = await confirmStripeTopup({
-          id: session.id as string,
-          metadata: (session.metadata || {}) as Record<string, string>,
-          amount_total: (session.amount_total as number | null) ?? null,
-          payment_status: (session.payment_status as string) || ''
-        })
-        if (!topupResult) {
-          sendJson(res, 200, { received: true, skipped: true })
-          return
-        }
-      }
-
-      sendJson(res, 200, { received: true })
-    } catch (error) {
-      if (error instanceof HttpError) {
-        sendJson(res, error.statusCode, { error: { code: error.code, message: error.message } })
-        return
-      }
-      sendJson(res, 400, { error: { code: 'WEBHOOK_ERROR', message: 'Webhook processing failed.' } })
-    }
     return
   }
 
