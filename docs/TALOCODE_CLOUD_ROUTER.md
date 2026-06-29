@@ -199,3 +199,42 @@ HTTP 503
   }
 }
 ```
+
+## Demo Flow
+
+### Prerequisites
+- Stacklane API server running on `http://localhost:4000`
+- Talocode API key with sufficient credits
+- At least one provider configured (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, or `GEMINI_API_KEY`)
+
+### Model listing (no auth required)
+```bash
+curl -s http://localhost:4000/v1/models | jq
+```
+
+### Provider status
+```bash
+curl -s http://localhost:4000/api/v1/cloud/router/providers | jq
+curl -s http://localhost:4000/api/v1/cloud/router/health | jq
+```
+
+### Chat completion with mock (always available)
+```bash
+curl -s -X POST http://localhost:4000/v1/chat/completions \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"talocode/fast","messages":[{"role":"user","content":"Hello"}]}' | jq
+```
+
+### Chat completion with provider fallback
+The router attempts providers in fallback order:
+- **talocode/auto**: openrouter → openai → gemini → mock
+- **talocode/fast**: openrouter → gemini → mock
+- **talocode/coding**: openrouter → openai → mock
+
+Mock is always appended as the last resort, so the router never returns 503 when at least mock is available. Provider errors (429, 5xx, timeout) trigger fallback. Non-fallback errors (400, 401, 404) immediately fail.
+
+### Smoke test
+```bash
+node scripts/smoke-cloud-router.mjs
+```

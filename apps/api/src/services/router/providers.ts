@@ -101,6 +101,20 @@ function parseOpenAiResponse(raw: string, provider: string): RouterResponse {
   }
 }
 
+function buildGeminiRequest(routerReq: RouterRequest, providerConfig: ProviderConfig): Record<string, unknown> {
+  const contents = routerReq.messages.map(msg => ({
+    role: msg.role === 'assistant' ? 'model' : msg.role,
+    parts: [{ text: msg.content }]
+  }))
+  return {
+    contents,
+    generationConfig: {
+      maxOutputTokens: routerReq.max_tokens ?? 4096,
+      temperature: routerReq.temperature ?? 0.7
+    }
+  }
+}
+
 function parseGeminiResponse(raw: string, provider: string): RouterResponse {
   const parsed = JSON.parse(raw)
   const candidates = parsed.candidates || []
@@ -202,7 +216,7 @@ export async function callProvider(
   }
 
   try {
-    const body = buildOpenAiRequest(routerReq, providerConfig)
+    const body = providerName === 'gemini' ? buildGeminiRequest(routerReq, providerConfig) : buildOpenAiRequest(routerReq, providerConfig)
     const url = providerName === 'gemini'
       ? `${providerConfig.baseUrl}/models/${providerConfig.defaultModel}:generateContent?key=${apiKey}`
       : `${providerConfig.baseUrl}/chat/completions`

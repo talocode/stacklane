@@ -95,3 +95,82 @@ Every charge creates a usage event with:
 | `/api/v1/cloud/projects/{id}/usage` | GET | Session | Usage history |
 | `/api/v1/cloud/projects/{id}/topups` | GET/POST | Session | Top-ups |
 | `/api/v1/cloud/billing/stripe/webhook` | POST | Stripe | Stripe events |
+
+## Demo Flow
+
+### Prerequisites
+- Stacklane API server running on `http://localhost:4000`
+- Admin credentials (default: `admin@stacklane.local` / `stacklane-admin`)
+
+### Step 1: Login and create a project
+```bash
+# Login (stores session cookie)
+curl -s -X POST http://localhost:4000/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@stacklane.local","password":"stacklane-admin"}' \
+  -c /tmp/demo-cookies.txt
+
+# Create a project
+curl -s -X POST http://localhost:4000/api/v1/cloud/projects \
+  -H 'Content-Type: application/json' \
+  -b /tmp/demo-cookies.txt \
+  -d '{"name":"Demo Project","slug":"demo-project"}'
+```
+
+### Step 2: Check wallet (expect 100 free credits)
+```bash
+curl -s http://localhost:4000/api/v1/cloud/projects/PROJECT_ID/wallet \
+  -b /tmp/demo-cookies.txt
+```
+
+### Step 3: Generate an API key
+```bash
+curl -s -X POST http://localhost:4000/api/v1/cloud/projects/PROJECT_ID/api-keys \
+  -H 'Content-Type: application/json' \
+  -b /tmp/demo-cookies.txt \
+  -d '{"name":"Demo Key"}'
+```
+
+### Step 4: Charge credits (Agent Browser action)
+```bash
+curl -s -X POST http://localhost:4000/api/v1/cloud/usage/charge \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"product":"agent_browser","action":"browser.check","requestId":"demo-001"}'
+```
+Response: `200 {"ok":true,"remainingCredits":98}` (2 credits deducted)
+
+### Step 5: Router chat completion
+```bash
+curl -s -X POST http://localhost:4000/v1/chat/completions \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"talocode/auto","messages":[{"role":"user","content":"Hello"}]}'
+```
+Response: OpenAI-compatible response with `provider` field indicating which provider served the request. Credits pre-charged before provider call, delta-charged after response.
+
+### Step 6: View usage history
+```bash
+curl -s http://localhost:4000/api/v1/cloud/projects/PROJECT_ID/usage \
+  -b /tmp/demo-cookies.txt
+```
+
+### Step 7: Test insufficient credits
+```bash
+# Drain wallet by charging until balance is too low
+# Then attempt another charge
+curl -s -X POST http://localhost:4000/api/v1/cloud/usage/charge \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"product":"agent_browser","action":"browser.check","requestId":"demo-insuff"}'
+```
+Response: `402 {"ok":false,"error":"insufficient_credits","required":2,"available":0}`
+
+### Smoke tests
+```bash
+# Billing smoke test (9 checks)
+node scripts/smoke-cloud-billing.mjs
+
+# Router smoke test (15 checks)
+node scripts/smoke-cloud-router.mjs
+```

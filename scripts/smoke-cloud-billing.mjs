@@ -4,18 +4,24 @@ const BASE = process.env.STACKLANE_API_URL || 'http://localhost:4000'
 const EMAIL = process.env.STACKLANE_ADMIN_EMAIL || 'admin@stacklane.local'
 const PASSWORD = process.env.STACKLANE_ADMIN_PASSWORD || 'stacklane-admin'
 const COOKIE_JAR = '/tmp/smoke-billing-cookies.txt'
-const { execSync } = await import('node:child_process')
-const { writeFileSync, unlinkSync } = await import('node:fs')
+const { spawnSync } = await import('node:child_process')
 
 function curl(method, path, opts = {}) {
-  const args = ['curl', '-sf', '-X', method, `${BASE}${path}`]
+  const args = ['-s', '-X', method, `${BASE}${path}`]
   if (opts.data) args.push('-H', 'Content-Type: application/json', '-d', JSON.stringify(opts.data))
   if (opts.cookie) args.push('-b', COOKIE_JAR, '-c', COOKIE_JAR)
   if (opts.auth) args.push('-H', `Authorization: Bearer ${opts.auth}`)
   if (opts.headers) for (const [k,v] of Object.entries(opts.headers)) args.push('-H', `${k}: ${v}`)
   try {
-    const out = execSync(args.join(' '), { encoding: 'utf-8', timeout: 10000 })
-    return JSON.parse(out)
+    const result = spawnSync('curl', args, { encoding: 'utf-8', timeout: 10000 })
+    if (result.error) throw result.error
+    if (result.status !== 0) {
+      const err = new Error(`curl exited with ${result.status}: ${result.stderr?.slice(0,200)}`)
+      err.stdout = result.stdout
+      err.stderr = result.stderr
+      throw err
+    }
+    return JSON.parse(result.stdout)
   } catch (e) {
     const msg = e.stderr || e.stdout || String(e)
     try { return JSON.parse(e.stdout || '{}') } catch { return { error: { code: 'CURL_FAILED', message: msg.slice(0,200) } } }
@@ -73,7 +79,7 @@ const insuff = curl('POST', '/api/v1/cloud/usage/charge', {
   auth: rawKey,
   data: { product: 'codra', action: 'task.large', requestId: `smoke-insuff-${Date.now()}` }
 })
-check('insufficient returns 402', insuff?.error?.code === 'insufficient_credits' || insuff?.data?.ok === false)
+check('insufficient returns 402', insuff?.data?.error === 'insufficient_credits' || insuff?.data?.ok === false)
 
 console.log(`\nPassed: ${passed}  Failed: ${failed}`)
 process.exit(failed > 0 ? 1 : 0)
