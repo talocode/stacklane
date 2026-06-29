@@ -8,8 +8,10 @@ import {
   CircleHelp,
   Command,
   Menu,
+  Moon,
   Plus,
   Search,
+  Sun,
   X,
   ChevronRight,
   LogOut
@@ -18,6 +20,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { navSections } from './nav-config'
 import { apiClient } from '@/lib/api-client'
 import type { User } from '@/lib/api-types'
+import { ThemeToggle } from '@/components/theme/theme-toggle'
 
 const STORAGE_KEY = 'stacklane.nav.expanded'
 
@@ -131,6 +134,7 @@ function TopBar({
         <button className="icon-btn" aria-label="Notifications">
           <Bell size={18} />
         </button>
+        <ThemeToggle />
         <button className="icon-btn" aria-label="Help">
           <CircleHelp size={18} />
         </button>

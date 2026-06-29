@@ -155,3 +155,70 @@ export type OrganizationOperationsRow = {
   capabilities: Capabilities
 }
 
+// ─── Cloud Billing Types ──────────────────────────────────────────
+
+export type CloudWallet = {
+  id: string
+  projectId: string
+  balance: number
+  lifetimeCredits: number
+  lifetimeSpend: number
+  freeCreditsGranted: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type CloudTransaction = {
+  id: string
+  walletId: string
+  type: 'charge' | 'topup' | 'grant' | 'refund'
+  creditsDelta: number
+  balanceAfter: number
+  product: string | null
+  action: string | null
+  reference: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
+}
+
+export type CloudUsageEvent = {
+  id: string
+  projectId: string
+  apiKeyId: string
+  product: string
+  action: string
+  credits: number
+  status: string
+  idempotencyKey: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
+}
+
+export type CloudPricingTier = {
+  action: string
+  product: string
+  credits: number
+  description: string
+}
+
+export type CloudTopupIntent = {
+  topup: {
+    id: string
+    walletId: string
+    amount: number
+    status: string
+  }
+  stripePublishableKey: string | null
+  clientSecret: string | null
+}
+
+export type CloudTopupResult = {
+  topup: {
+    id: string
+    walletId: string
+    amount: number
+    status: string
+  }
+  wallet: CloudWallet
+}
+

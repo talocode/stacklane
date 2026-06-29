@@ -1,6 +1,12 @@
 import type {
   ApiKey,
   AuditEvent,
+  CloudPricingTier,
+  CloudTopupIntent,
+  CloudTopupResult,
+  CloudTransaction,
+  CloudUsageEvent,
+  CloudWallet,
   Environment,
   Organization,
   Project,
@@ -92,6 +98,32 @@ export const apiClient = {
     request<Environment>(`/projects/${idOrSlug}/environments/${environmentId}`, {
       method: 'PATCH',
       body: JSON.stringify(input)
+    }),
+
+  // ─── Cloud Billing ──────────────────────────────────────────────
+
+  getCloudWallet: (projectId: string) =>
+    request<CloudWallet>(`/api/v1/cloud/billing/wallet?projectId=${projectId}`),
+
+  listCloudTransactions: (projectId: string, limit = 50) =>
+    request<CloudTransaction[]>(`/api/v1/cloud/billing/transactions?projectId=${projectId}&limit=${limit}`),
+
+  listCloudUsageEvents: (projectId: string, limit = 50) =>
+    request<CloudUsageEvent[]>(`/api/v1/cloud/usage/events?projectId=${projectId}&limit=${limit}`),
+
+  listCloudPricing: () =>
+    request<CloudPricingTier[]>('/api/v1/cloud/pricing'),
+
+  createCloudTopup: (projectId: string, amount: number) =>
+    request<CloudTopupIntent>('/api/v1/cloud/billing/topup', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, amount })
+    }),
+
+  confirmCloudTopup: (projectId: string, topupId: string) =>
+    request<CloudTopupResult>('/api/v1/cloud/billing/topup/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, topupId })
     })
 }
 

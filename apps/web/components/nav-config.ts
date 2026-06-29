@@ -14,7 +14,11 @@ import {
   HardDrive,
   Lock,
   Cog,
-  ScrollText
+  ScrollText,
+  Wallet,
+  CreditCard,
+  BarChart3,
+  Zap
 } from 'lucide-react'
 
 export type NavLeaf = { label: string; href: string; icon: React.ComponentType<{ size?: number }> }
@@ -40,15 +44,16 @@ export const navSections: NavSection[] = [
     ]
   },
   {
-    title: 'Usage',
+    title: 'Talocode Cloud',
     items: [
-      { label: 'Metrics', href: '/usage/metrics', icon: Activity },
-      { label: 'Logs', href: '/usage/logs', icon: Logs },
+      { label: 'Wallet', href: '/billing', icon: Wallet },
+      { label: 'Pricing', href: '/billing/plans', icon: CreditCard },
+      { label: 'Usage', href: '/billing/usage', icon: BarChart3 },
       { label: 'API Keys', href: '/usage/api-keys', icon: KeyRound }
     ]
   },
   {
-    title: 'Billing',
+    title: 'Legacy Billing',
     items: [
       { label: 'Plans', href: '/billing/plans', icon: BadgeDollarSign },
       { label: 'Usage Billing', href: '/billing/usage', icon: ScrollText }
