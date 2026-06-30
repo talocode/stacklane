@@ -95,6 +95,20 @@ For detailed tool schemas, see [MCP_TOOLS.md](./MCP_TOOLS.md).
 
 See [MCP_CLIENT_SETUP.md](./MCP_CLIENT_SETUP.md) for configuration examples for Cursor, Claude Desktop, VS Code, and other MCP-compatible clients.
 
+### Direct HTTP (supports headers)
+Use the `url` + `headers` config for clients that support custom HTTP headers.
+
+### Local Bridge (stdio)
+For clients that do not support custom HTTP headers, use `@talocode/mcp` as a local bridge:
+
+```
+npx @talocode/mcp
+```
+
+The bridge forwards all MCP requests to `https://api.talocode.xyz/mcp` with `Authorization: Bearer $TALOCODE_API_KEY`. Set `TALOCODE_API_KEY` in the environment.
+
+See [TALOCODE_MCP_BRIDGE.md](./TALOCODE_MCP_BRIDGE.md) for full bridge documentation.
+
 ## Security
 
 - Talocode MCP never logs raw API keys

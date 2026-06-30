@@ -100,15 +100,42 @@ For local testing against a running Stacklane API instance:
 }
 ```
 
-## Bridge Package (Future)
+## Bridge Package (Stdio)
 
-For clients that do not support HTTP MCP with custom headers, a future bridge package will be available:
+For MCP clients that do not support custom HTTP headers (Claude Desktop, Cursor, OpenCode), use the local bridge:
 
-```bash
-npx @talocode/mcp https://api.talocode.xyz/mcp
+```json
+{
+  "mcpServers": {
+    "talocode": {
+      "command": "npx",
+      "args": ["@talocode/mcp"],
+      "env": {
+        "TALOCODE_API_KEY": "tk_live_xxxxxxxxxxxx"
+      }
+    }
+  }
+}
 ```
 
-This is planned for a future release.
+The bridge reads `TALOCODE_API_KEY` from the environment and forwards requests to `https://api.talocode.xyz/mcp` with the proper `Authorization` header.
+
+For local development:
+
+```json
+{
+  "mcpServers": {
+    "talocode": {
+      "command": "npx",
+      "args": ["@talocode/mcp"],
+      "env": {
+        "TALOCODE_API_KEY": "tk_dev_xxxxxxxxxxxx",
+        "TALOCODE_MCP_URL": "http://localhost:4000/mcp"
+      }
+    }
+  }
+}
+```
 
 ## Security Notes
 
