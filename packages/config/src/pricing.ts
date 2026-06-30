@@ -4,55 +4,55 @@ export const TALOCODE_CLOUD_PRICING = {
   minimumTopUpCredits: 500,
   products: {
     agent_browser: {
-      "browser.check": 2,
-      "browser.screenshot": 3,
-      "browser.evidence": 3,
-      "browser.trace_report": 5
+      "browser.check": 5,
+      "browser.screenshot": 8,
+      "browser.evidence": 8,
+      "browser.trace_report": 15
     },
     tera_context: {
-      "context.capture": 2,
-      "context.summarize": 5
+      "context.capture": 5,
+      "context.summarize": 10
     },
     talocode_reach: {
-      "web.read": 2,
-      "search.query": 2,
-      "github.read": 2,
-      "rss.read": 1
+      "web.read": 3,
+      "search.query": 3,
+      "github.read": 3,
+      "rss.read": 2
     },
     cliploop: {
-      "brief.generate": 10,
-      "script.generate": 10,
-      "video.render": 150,
-      "campaign.package": 300
+      "brief.generate": 15,
+      "script.generate": 15,
+      "video.render": 200,
+      "campaign.package": 400
     },
     signallane: {
-      "signal.detect": 3,
-      "lead.score": 5,
-      "followup.generate": 5
+      "signal.detect": 5,
+      "lead.score": 8,
+      "followup.generate": 8
     },
     tradia: {
-      "trade.import": 2,
-      "performance.analyze": 15,
-      "risk.report": 25,
-      "behavior.report": 25
+      "trade.import": 3,
+      "performance.analyze": 20,
+      "risk.report": 35,
+      "behavior.report": 35
     },
     codra: {
-      "repo.summary": 10,
-      "task.small": 25,
-      "task.large": 100
+      "repo.summary": 15,
+      "task.small": 40,
+      "task.large": 150
     },
     worklane: {
-      "workflow.small": 10,
-      "workflow.large": 25
+      "workflow.small": 15,
+      "workflow.large": 40
     },
     talocode_router: {
-      "chat.fast": 2,
-      "chat.auto": 3,
-      "chat.coding": 5,
-      "chat.completions": 1,
-      "compression.logs": 1,
-      "compression.diff": 1,
-      "compression.trace": 2
+      "chat.fast": 3,
+      "chat.auto": 5,
+      "chat.coding": 8,
+      "chat.completions": 2,
+      "compression.logs": 2,
+      "compression.diff": 2,
+      "compression.trace": 3
     }
   }
 } as const

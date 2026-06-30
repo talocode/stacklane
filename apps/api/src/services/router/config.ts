@@ -3,21 +3,21 @@ import { randomUUID } from 'node:crypto'
 export const TALOCODE_ROUTER_MODELS = {
   'talocode/auto': {
     fallback: ['openrouter', 'openai', 'gemini'],
+    creditsPerRequest: 4,
+    creditsPer1kInputTokens: 2,
+    creditsPer1kOutputTokens: 3
+  },
+  'talocode/fast': {
+    fallback: ['openrouter', 'gemini'],
     creditsPerRequest: 2,
     creditsPer1kInputTokens: 1,
     creditsPer1kOutputTokens: 2
   },
-  'talocode/fast': {
-    fallback: ['openrouter', 'gemini'],
-    creditsPerRequest: 1,
-    creditsPer1kInputTokens: 1,
-    creditsPer1kOutputTokens: 1
-  },
   'talocode/coding': {
     fallback: ['openrouter', 'openai'],
-    creditsPerRequest: 3,
-    creditsPer1kInputTokens: 2,
-    creditsPer1kOutputTokens: 4
+    creditsPerRequest: 5,
+    creditsPer1kInputTokens: 3,
+    creditsPer1kOutputTokens: 6
   }
 } as const
 

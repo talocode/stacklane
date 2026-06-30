@@ -68,7 +68,7 @@ check('charge succeeds', charge?.data?.ok === true)
 
 // 7. Wallet after charge
 const wallet2 = curl('GET', `/api/v1/cloud/projects/${pid}/wallet`, { cookie: true })
-check('wallet deducted', wallet2?.data?.wallet?.balanceCredits === 98)
+check('wallet deducted', wallet2?.data?.wallet?.balanceCredits === 95)
 
 // 8. Usage events
 const usage = curl('GET', `/api/v1/cloud/projects/${pid}/usage`, { cookie: true })
