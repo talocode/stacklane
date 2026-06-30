@@ -2,8 +2,8 @@ import { TeraClient } from './tera'
 import { RouterClient } from './router'
 import { AgentBrowserClient } from './agent-browser'
 import { ClipLoopClient } from './cliploop'
+import { CodraClient } from './codra'
 import {
-  CodraClientPlaceholder,
   TradiaClientPlaceholder,
   SignalLaneClientPlaceholder,
   WorkLaneClientPlaceholder,
@@ -24,7 +24,7 @@ export class Talocode {
   public router: RouterClient
   public agentBrowser: AgentBrowserClient
   public cliploop: ClipLoopClient
-  public codra: CodraClientPlaceholder
+  public codra: CodraClient
   public tradia: TradiaClientPlaceholder
   public signallane: SignalLaneClientPlaceholder
   public worklane: WorkLaneClientPlaceholder
@@ -46,7 +46,7 @@ export class Talocode {
     this.router = new RouterClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.agentBrowser = new AgentBrowserClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.cliploop = new ClipLoopClient(this.baseUrl, this.apiKey, this.timeoutMs)
-    this.codra = new CodraClientPlaceholder()
+    this.codra = new CodraClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.tradia = new TradiaClientPlaceholder()
     this.signallane = new SignalLaneClientPlaceholder()
     this.worklane = new WorkLaneClientPlaceholder()

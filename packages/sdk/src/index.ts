@@ -159,6 +159,7 @@ export { TeraClient } from './tera'
 export { RouterClient } from './router'
 export { AgentBrowserClient } from './agent-browser'
 export { ClipLoopClient } from './cliploop'
+export { CodraClient } from './codra'
 export {
   CodraClientPlaceholder,
   TradiaClientPlaceholder,

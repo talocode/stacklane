@@ -85,13 +85,20 @@ describe('Talocode SDK', () => {
       assert.strictEqual(typeof c.cliploop.campaign.package, 'function')
     })
 
-    it('has placeholder namespaces', () => {
+    it('has codra namespace', () => {
       const c = new Talocode()
       assert.ok(c.codra)
+      assert.strictEqual(typeof c.codra.repoSummary, 'function')
+      assert.strictEqual(typeof c.codra.explain, 'function')
+      assert.strictEqual(typeof c.codra.review, 'function')
+      assert.strictEqual(typeof c.codra.plan, 'function')
+    })
+
+    it('has placeholder namespaces (tradia, signallane, worklane)', () => {
+      const c = new Talocode()
       assert.ok(c.tradia)
       assert.ok(c.signallane)
       assert.ok(c.worklane)
-      assert.strictEqual(typeof c.codra.execute, 'function')
       assert.strictEqual(typeof c.tradia.analyze, 'function')
       assert.strictEqual(typeof c.signallane.detect, 'function')
       assert.strictEqual(typeof c.worklane.run, 'function')
@@ -99,7 +106,6 @@ describe('Talocode SDK', () => {
 
     it('placeholder namespaces throw TalocodeNotImplementedError', async () => {
       const c = new Talocode()
-      await assert.rejects(() => c.codra.execute(), TalocodeNotImplementedError)
       await assert.rejects(() => c.tradia.analyze(), TalocodeNotImplementedError)
       await assert.rejects(() => c.signallane.detect(), TalocodeNotImplementedError)
       await assert.rejects(() => c.worklane.run(), TalocodeNotImplementedError)
@@ -197,6 +203,70 @@ describe('Talocode SDK', () => {
         const c = new Talocode({ apiKey: 'test-key' })
         await c.cliploop.campaign.create({ name: 'test', platform: 'twitter' })
         assert.ok(capturedUrl.includes('/v1/cliploop/campaign/create'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('codra.repoSummary uses /v1/codra/repo-summary', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'test', object: 'codra.repo_summary', result: { summary: '', architecture: [], risks: [], nextSteps: [] }, usage: { credits: 50, action: 'codra.repo.summary' } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.codra.repoSummary({ files: [{ path: 't.ts', content: 'x' }] })
+        assert.ok(capturedUrl.includes('/v1/codra/repo-summary'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('codra.explain uses /v1/codra/explain', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'test', object: 'codra.explain', result: { explanation: '', keyConcepts: [] }, usage: { credits: 20, action: 'codra.explain' } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.codra.explain({ language: 'ts', code: 'x' })
+        assert.ok(capturedUrl.includes('/v1/codra/explain'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('codra.review uses /v1/codra/review', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'test', object: 'codra.review', result: { issues: [], summary: '', score: 0 }, usage: { credits: 40, action: 'codra.review' } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.codra.review({ language: 'ts', code: 'x' })
+        assert.ok(capturedUrl.includes('/v1/codra/review'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('codra.plan uses /v1/codra/plan', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'test', object: 'codra.plan', result: { plan: '', steps: [], risks: [], estimatedEffort: '' }, usage: { credits: 40, action: 'codra.plan' } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.codra.plan({ task: 'test task' })
+        assert.ok(capturedUrl.includes('/v1/codra/plan'))
       } finally {
         globalThis.fetch = origFetch
       }
