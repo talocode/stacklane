@@ -1,6 +1,13 @@
 import { TeraClient } from './tera'
 import { RouterClient } from './router'
 import { AgentBrowserClient } from './agent-browser'
+import { ClipLoopClient } from './cliploop'
+import {
+  CodraClientPlaceholder,
+  TradiaClientPlaceholder,
+  SignalLaneClientPlaceholder,
+  WorkLaneClientPlaceholder,
+} from './placeholders'
 
 export interface TalocodeOptions {
   apiKey?: string
@@ -16,6 +23,11 @@ export class Talocode {
   public tera: TeraClient
   public router: RouterClient
   public agentBrowser: AgentBrowserClient
+  public cliploop: ClipLoopClient
+  public codra: CodraClientPlaceholder
+  public tradia: TradiaClientPlaceholder
+  public signallane: SignalLaneClientPlaceholder
+  public worklane: WorkLaneClientPlaceholder
   public baseUrl: string
   public apiKey: string | undefined
   public timeoutMs: number
@@ -33,5 +45,10 @@ export class Talocode {
     this.tera = new TeraClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.router = new RouterClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.agentBrowser = new AgentBrowserClient(this.baseUrl, this.apiKey, this.timeoutMs)
+    this.cliploop = new ClipLoopClient(this.baseUrl, this.apiKey, this.timeoutMs)
+    this.codra = new CodraClientPlaceholder()
+    this.tradia = new TradiaClientPlaceholder()
+    this.signallane = new SignalLaneClientPlaceholder()
+    this.worklane = new WorkLaneClientPlaceholder()
   }
 }

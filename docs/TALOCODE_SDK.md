@@ -1,6 +1,6 @@
 # Talocode Cloud SDK
 
-Package name: `@stacklane/sdk` (alias prepared for `@talocode/sdk`)
+Official package: `@talocode/sdk` (currently available as `@stacklane/sdk`)
 
 The Talocode Cloud SDK provides typed access to all Talocode product APIs through a single client.
 
@@ -9,10 +9,10 @@ The Talocode Cloud SDK provides typed access to all Talocode product APIs throug
 ## Installation
 
 ```bash
-npm install @stacklane/sdk
+npm install @stacklane/sdk   # current
 ```
 
-When published, the canonical name will be:
+When published, the canonical import will be:
 
 ```bash
 npm install @talocode/sdk
@@ -21,21 +21,17 @@ npm install @talocode/sdk
 ## Quick Start
 
 ```ts
-import { Talocode } from "@stacklane/sdk";
+import { Talocode } from "@talocode/sdk";
 
 const talocode = new Talocode({
   apiKey: process.env.TALOCODE_API_KEY,
-  baseUrl: process.env.TALOCODE_BASE_URL, // defaults to https://api.talocode.xyz
 });
 
 const result = await talocode.tera.writing.rewrite({
   text: "We shipped Agent Browser.",
   style: "clear, founder-like, X post",
-  tone: "direct",
   maxLength: 280,
 });
-
-console.log(result.result.text);
 ```
 
 ## Configuration
@@ -50,11 +46,16 @@ const talocode = new Talocode({
 
 ## Supported Namespaces
 
-| Namespace | Client Access | Description |
-|-----------|--------------|-------------|
-| Tera | `talocode.tera.*` | Writing and coding capabilities |
-| Router | `talocode.router.*` | OpenAI-compatible chat completions |
-| Agent Browser | `talocode.agentBrowser.*` | Browser validation and screenshots |
+| Namespace | Client Access | Status |
+|-----------|--------------|--------|
+| Tera | `talocode.tera.*` | Implemented |
+| Router | `talocode.router.*` | Implemented |
+| Agent Browser | `talocode.agentBrowser.*` | Implemented |
+| ClipLoop | `talocode.cliploop.*` | Implemented (typed, routes planned) |
+| Codra | `talocode.codra.*` | Planned — throws `TalocodeNotImplementedError` |
+| Tradia | `talocode.tradia.*` | Planned — throws `TalocodeNotImplementedError` |
+| SignalLane | `talocode.signallane.*` | Planned — throws `TalocodeNotImplementedError` |
+| WorkLane | `talocode.worklane.*` | Planned — throws `TalocodeNotImplementedError` |
 
 ## Tera API
 
@@ -107,16 +108,37 @@ const trace = await talocode.agentBrowser.traceReport({
 });
 ```
 
+## ClipLoop API (planned — routes documented, backend in development)
+
+```ts
+const brief = await talocode.cliploop.brief({
+  prompt: "Weekly promo for our new feature",
+  channel: "twitter",
+  tone: "exciting",
+});
+
+const script = await talocode.cliploop.script({ briefId: brief.id });
+
+const video = await talocode.cliploop.render({
+  scriptId: script.id,
+  format: "portrait",
+  quality: "standard",
+});
+
+const campaign = await talocode.cliploop.campaign.create({
+  name: "Product Launch Week",
+  platform: "twitter",
+});
+
+const packaged = await talocode.cliploop.campaign.package({
+  campaignId: campaign.id,
+});
+```
+
 ## Error Handling
 
 ```ts
-import {
-  TalocodeError,
-  TalocodeAuthError,
-  TalocodeInsufficientCreditsError,
-  TalocodeRateLimitError,
-  TalocodeValidationError,
-} from "@stacklane/sdk";
+import { TalocodeInsufficientCreditsError, TalocodeAuthError } from "@talocode/sdk";
 
 try {
   await talocode.tera.writing.rewrite({ text: "Hello", style: "clear" });
@@ -125,33 +147,20 @@ try {
     console.log(`Need ${err.required} credits, have ${err.available}`);
   } else if (err instanceof TalocodeAuthError) {
     console.log("Check your TALOCODE_API_KEY");
-  } else if (err instanceof TalocodeValidationError) {
-    console.log("Validation failed:", err.details);
-  } else if (err instanceof TalocodeRateLimitError) {
-    console.log("Rate limited, retry later");
-  } else if (err instanceof TalocodeError) {
-    console.log(`API error ${err.status}: ${err.message}`);
   }
 }
 ```
 
-## TypeScript
+All error classes:
 
-All inputs and responses are fully typed:
-
-```ts
-import {
-  Talocode,
-  TeraRewriteInput,
-  TeraRewriteResult,
-  TeraSuccessResponse,
-  RouterChatInput,
-  RouterChatResponse,
-  AgentBrowserCheckInput,
-  AgentBrowserCheckResult,
-  UsageMeta,
-} from "@stacklane/sdk";
-```
+| Error Class | HTTP Status | Description |
+|-------------|-------------|-------------|
+| `TalocodeError` | varies | Base error |
+| `TalocodeAuthError` | 401 | Missing/invalid API key |
+| `TalocodeInsufficientCreditsError` | 402 | Not enough credits |
+| `TalocodeRateLimitError` | 429 | Rate limited |
+| `TalocodeValidationError` | 400 | Invalid request |
+| `TalocodeNotImplementedError` | — | Namespace not yet implemented |
 
 ## Migration from v0.4
 
@@ -162,7 +171,6 @@ import { createStacklaneClient, Talocode } from "@stacklane/sdk";
 
 // Still works:
 const admin = createStacklaneClient({ baseUrl: "http://localhost:4000" });
-await admin.health();
 
 // New Talocode Cloud client:
 const cloud = new Talocode({ apiKey: process.env.TALOCODE_API_KEY });

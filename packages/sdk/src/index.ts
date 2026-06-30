@@ -158,11 +158,19 @@ export type { TalocodeOptions } from './talocode'
 export { TeraClient } from './tera'
 export { RouterClient } from './router'
 export { AgentBrowserClient } from './agent-browser'
+export { ClipLoopClient } from './cliploop'
+export {
+  CodraClientPlaceholder,
+  TradiaClientPlaceholder,
+  SignalLaneClientPlaceholder,
+  WorkLaneClientPlaceholder,
+} from './placeholders'
 export {
   TalocodeError,
   TalocodeAuthError,
   TalocodeInsufficientCreditsError,
   TalocodeRateLimitError,
   TalocodeValidationError,
+  TalocodeNotImplementedError,
 } from './errors'
 export * from './types'

@@ -237,3 +237,65 @@ export interface AgentBrowserTraceReportResult {
   durationMs: number
   reportUrl?: string
 }
+
+// ─── ClipLoop API ───
+
+export interface ClipLoopBriefInput {
+  prompt: string
+  channel?: 'youtube' | 'tiktok' | 'instagram' | 'twitter' | 'linkedin'
+  tone?: string
+  duration?: number
+  cta?: string
+}
+
+export interface ClipLoopBriefResult {
+  id: string
+  brief: string
+  channel: string
+  estimatedDuration: number
+}
+
+export interface ClipLoopScriptInput {
+  briefId: string
+  style?: string
+}
+
+export interface ClipLoopScriptResult {
+  id: string
+  script: string
+  scenes: ClipLoopScriptScene[]
+}
+
+export interface ClipLoopScriptScene {
+  index: number
+  visual: string
+  narration: string
+  duration: number
+}
+
+export interface ClipLoopVideoRenderInput {
+  scriptId: string
+  format?: 'portrait' | 'landscape' | 'square'
+  quality?: 'draft' | 'standard' | 'high'
+}
+
+export interface ClipLoopVideoRenderResult {
+  id: string
+  status: 'rendering' | 'completed' | 'failed'
+  url?: string
+  duration: number
+  creditsCharged: number
+}
+
+export interface ClipLoopCampaignCreateInput {
+  name: string
+  platform: string
+  schedule?: string
+}
+
+export interface ClipLoopCampaignResult {
+  id: string
+  name: string
+  status: string
+  videos: string[]
+}

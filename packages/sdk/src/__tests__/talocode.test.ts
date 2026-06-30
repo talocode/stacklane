@@ -1,6 +1,6 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert'
-import { Talocode, TalocodeInsufficientCreditsError, TalocodeAuthError, TalocodeRateLimitError, TalocodeValidationError, TalocodeError } from '../index'
+import { Talocode, TalocodeInsufficientCreditsError, TalocodeAuthError, TalocodeRateLimitError, TalocodeValidationError, TalocodeError, TalocodeNotImplementedError, createStacklaneClient } from '../index'
 
 describe('Talocode SDK', () => {
   const originalEnv = { ...process.env }
@@ -74,6 +74,36 @@ describe('Talocode SDK', () => {
       assert.strictEqual(typeof c.agentBrowser.screenshot, 'function')
       assert.strictEqual(typeof c.agentBrowser.traceReport, 'function')
     })
+
+    it('has cliploop namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.cliploop)
+      assert.strictEqual(typeof c.cliploop.brief, 'function')
+      assert.strictEqual(typeof c.cliploop.script, 'function')
+      assert.strictEqual(typeof c.cliploop.render, 'function')
+      assert.strictEqual(typeof c.cliploop.campaign.create, 'function')
+      assert.strictEqual(typeof c.cliploop.campaign.package, 'function')
+    })
+
+    it('has placeholder namespaces', () => {
+      const c = new Talocode()
+      assert.ok(c.codra)
+      assert.ok(c.tradia)
+      assert.ok(c.signallane)
+      assert.ok(c.worklane)
+      assert.strictEqual(typeof c.codra.execute, 'function')
+      assert.strictEqual(typeof c.tradia.analyze, 'function')
+      assert.strictEqual(typeof c.signallane.detect, 'function')
+      assert.strictEqual(typeof c.worklane.run, 'function')
+    })
+
+    it('placeholder namespaces throw TalocodeNotImplementedError', async () => {
+      const c = new Talocode()
+      await assert.rejects(() => c.codra.execute(), TalocodeNotImplementedError)
+      await assert.rejects(() => c.tradia.analyze(), TalocodeNotImplementedError)
+      await assert.rejects(() => c.signallane.detect(), TalocodeNotImplementedError)
+      await assert.rejects(() => c.worklane.run(), TalocodeNotImplementedError)
+    })
   })
 
   describe('route paths', () => {
@@ -124,6 +154,54 @@ describe('Talocode SDK', () => {
       }
     })
 
+    it('cliploop.brief uses /v1/cliploop/brief/generate', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'test', brief: 'test', channel: 'twitter', estimatedDuration: 15 }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.cliploop.brief({ prompt: 'Test video', channel: 'twitter' })
+        assert.ok(capturedUrl.includes('/v1/cliploop/brief/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('cliploop.render uses /v1/cliploop/video/render', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'test', status: 'rendering', duration: 30, creditsCharged: 200 }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.cliploop.render({ scriptId: 's1', format: 'portrait' })
+        assert.ok(capturedUrl.includes('/v1/cliploop/video/render'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('cliploop.campaign.create uses /v1/cliploop/campaign/create', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'camp1', name: 'test', status: 'draft', videos: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.cliploop.campaign.create({ name: 'test', platform: 'twitter' })
+        assert.ok(capturedUrl.includes('/v1/cliploop/campaign/create'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('agentBrowser.check uses /v1/agent-browser/check', async () => {
       let capturedUrl = ''
       const origFetch = globalThis.fetch
@@ -158,7 +236,17 @@ describe('Talocode SDK', () => {
     })
   })
 
-  describe('error handling', () => {
+  describe('legacy compatibility', () => {
+  it('createStacklaneClient still works', () => {
+    const client = createStacklaneClient({ baseUrl: 'http://localhost:4000' })
+    assert.ok(client)
+    assert.strictEqual(typeof client.health, 'function')
+    assert.strictEqual(typeof client.projects.list, 'function')
+    assert.strictEqual(typeof client.tokens.verify, 'function')
+  })
+})
+
+describe('error handling', () => {
     it('401 maps to TalocodeAuthError', async () => {
       const origFetch = globalThis.fetch
       globalThis.fetch = async () => {

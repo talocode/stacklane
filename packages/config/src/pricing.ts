@@ -23,6 +23,7 @@ export const TALOCODE_CLOUD_PRICING = {
       "brief.generate": 15,
       "script.generate": 15,
       "video.render": 200,
+      "campaign.create": 50,
       "campaign.package": 400
     },
     signallane: {

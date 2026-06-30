@@ -47,3 +47,10 @@ export class TalocodeValidationError extends TalocodeError {
     this.details = details
   }
 }
+
+export class TalocodeNotImplementedError extends TalocodeError {
+  constructor(namespace: string, method: string) {
+    super(`${namespace}.${method} is not yet implemented.`, 0, 'not_implemented')
+    this.name = 'TalocodeNotImplementedError'
+  }
+}
