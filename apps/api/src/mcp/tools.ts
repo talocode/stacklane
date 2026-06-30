@@ -29,7 +29,9 @@ export async function callTool(
 ): Promise<McpToolResult> {
   const client = createProductClient(ctx.apiKey)
 
-  const result = await client.request(tool.method, tool.route, args)
+  const body = tool.method === 'POST' ? args : undefined
+  console.error('DEBUG: tool=%s method=%s body=%s', tool.name, tool.method, JSON.stringify(body))
+  const result = await client.request(tool.method, tool.route, body)
 
   if (!result.ok) {
     const mcpError = mapHttpStatusToMcpError(result.status, result.body)

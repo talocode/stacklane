@@ -29,8 +29,8 @@ EXCEPTION
 END $$;
 
 CREATE TABLE IF NOT EXISTS cloud_projects (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -40,8 +40,8 @@ CREATE TABLE IF NOT EXISTS cloud_projects (
 CREATE INDEX IF NOT EXISTS cloud_projects_owner_id_idx ON cloud_projects(owner_id);
 
 CREATE TABLE IF NOT EXISTS cloud_api_keys (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES cloud_projects(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES cloud_projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     key_prefix TEXT NOT NULL,
     key_hash TEXT NOT NULL UNIQUE,
@@ -56,8 +56,8 @@ CREATE INDEX IF NOT EXISTS cloud_api_keys_project_id_idx ON cloud_api_keys(proje
 CREATE INDEX IF NOT EXISTS cloud_api_keys_key_hash_idx ON cloud_api_keys(key_hash);
 
 CREATE TABLE IF NOT EXISTS cloud_wallets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL UNIQUE REFERENCES cloud_projects(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL UNIQUE REFERENCES cloud_projects(id) ON DELETE CASCADE,
     balance_credits INTEGER NOT NULL DEFAULT 0,
     free_credits_granted BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -66,8 +66,8 @@ CREATE TABLE IF NOT EXISTS cloud_wallets (
 );
 
 CREATE TABLE IF NOT EXISTS cloud_wallet_transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    wallet_id UUID NOT NULL REFERENCES cloud_wallets(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    wallet_id TEXT NOT NULL REFERENCES cloud_wallets(id) ON DELETE CASCADE,
     type cloud_wallet_transaction_type NOT NULL,
     credits_delta INTEGER NOT NULL,
     balance_after INTEGER NOT NULL,
@@ -80,9 +80,9 @@ CREATE INDEX IF NOT EXISTS cloud_wallet_transactions_wallet_id_idx ON cloud_wall
 CREATE INDEX IF NOT EXISTS cloud_wallet_transactions_created_at_idx ON cloud_wallet_transactions(created_at);
 
 CREATE TABLE IF NOT EXISTS cloud_usage_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES cloud_projects(id) ON DELETE CASCADE,
-    api_key_id UUID REFERENCES cloud_api_keys(id) ON DELETE SET NULL,
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES cloud_projects(id) ON DELETE CASCADE,
+    api_key_id TEXT REFERENCES cloud_api_keys(id) ON DELETE SET NULL,
     product TEXT NOT NULL,
     action TEXT NOT NULL,
     credits INTEGER NOT NULL,
@@ -99,8 +99,8 @@ CREATE INDEX IF NOT EXISTS cloud_usage_events_product_action_idx ON cloud_usage_
 CREATE INDEX IF NOT EXISTS cloud_usage_events_created_at_idx ON cloud_usage_events(created_at);
 
 CREATE TABLE IF NOT EXISTS cloud_topups (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES cloud_projects(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES cloud_projects(id) ON DELETE CASCADE,
     provider TEXT NOT NULL DEFAULT 'manual',
     provider_reference TEXT,
     amount_usd INTEGER NOT NULL,
