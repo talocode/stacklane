@@ -334,13 +334,13 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     return
   }
 
-  if (req.method === 'GET' && path === '/v1/models') {
+  if (req.method === 'GET' && (path === '/v1/models' || path === '/v1/router/models')) {
     const models = await getModels()
     sendData(res, 200, models)
     return
   }
 
-  if (req.method === 'POST' && path === '/v1/chat/completions') {
+  if (req.method === 'POST' && (path === '/v1/chat/completions' || path === '/v1/router/chat/completions')) {
     let rawKey: string
     const authHeader = req.headers['authorization'] || ''
     if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {

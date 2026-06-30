@@ -2,6 +2,10 @@
 
 Prepaid wallet billing system for Talocode Cloud services.
 
+> **Base URL:** `https://api.talocode.xyz` (set `TALOCODE_BASE_URL` env var to override; defaults to `http://localhost:4000` in development).
+
+## Credits
+
 ## Credits
 
 - 1 credit = $0.01 USD

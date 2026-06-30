@@ -21,7 +21,9 @@ curl https://api.talocode.xyz/v1/chat/completions \
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
 | POST | `/v1/chat/completions` | API Key | Chat completion with provider routing |
+| POST | `/v1/router/chat/completions` | API Key | Same — namespaced product route |
 | GET | `/v1/models` | None | List available Talocode router models |
+| GET | `/v1/router/models` | None | Same — namespaced product route |
 | GET | `/api/v1/cloud/router/health` | None | Router health and provider status |
 | GET | `/api/v1/cloud/router/providers` | None | List configured providers |
 
