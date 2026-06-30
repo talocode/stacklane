@@ -38,9 +38,10 @@ export const TALOCODE_CLOUD_PRICING = {
       "behavior.report": 35
     },
     codra: {
-      "repo.summary": 15,
-      "task.small": 40,
-      "task.large": 150
+      "repo.summary": 50,
+      "explain": 20,
+      "review": 40,
+      "plan": 40
     },
     worklane: {
       "workflow.small": 15,

@@ -52,7 +52,7 @@ const talocode = new Talocode({
 | Router | `talocode.router.*` | Implemented |
 | Agent Browser | `talocode.agentBrowser.*` | Implemented |
 | ClipLoop | `talocode.cliploop.*` | Implemented (typed, routes planned) |
-| Codra | `talocode.codra.*` | Planned — throws `TalocodeNotImplementedError` |
+| Codra | `talocode.codra.*` | Implemented |
 | Tradia | `talocode.tradia.*` | Planned — throws `TalocodeNotImplementedError` |
 | SignalLane | `talocode.signallane.*` | Planned — throws `TalocodeNotImplementedError` |
 | WorkLane | `talocode.worklane.*` | Planned — throws `TalocodeNotImplementedError` |
@@ -107,6 +107,41 @@ const trace = await talocode.agentBrowser.traceReport({
   steps: [{ action: "click", selector: "#submit" }],
 });
 ```
+
+## Codra API
+
+Codra Cloud API provides hosted coding capabilities: repo analysis, code explanation, code review, and planning. Local Codra remains open-source and local-first.
+
+```ts
+// Analyze repository structure
+const summary = await talocode.codra.repoSummary({
+  files: [{ path: "src/main.ts", content: "..." }],
+  focus: ["architecture", "risks"],
+});
+
+// Explain code
+const explain = await talocode.codra.explain({
+  language: "typescript",
+  code: "const x = 1;",
+  level: "beginner",
+});
+
+// Review code
+const review = await talocode.codra.review({
+  language: "typescript",
+  code: "function f() {}",
+  focus: ["bugs", "types"],
+});
+
+// Plan implementation
+const plan = await talocode.codra.plan({
+  task: "Add Stripe topups",
+  context: "We use Stripe for payments",
+  constraints: ["do not break auth"],
+});
+```
+
+Pricing: `repo.summary` 50cr, `explain` 20cr, `review` 40cr, `plan` 40cr.
 
 ## ClipLoop API (planned — routes documented, backend in development)
 

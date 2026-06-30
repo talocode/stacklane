@@ -299,3 +299,87 @@ export interface ClipLoopCampaignResult {
   status: string
   videos: string[]
 }
+
+// ─── Codra API ───
+
+export interface CodraFileInput {
+  path: string
+  content: string
+}
+
+export interface CodraRepoSummaryInput {
+  files: CodraFileInput[]
+  focus?: string[]
+}
+
+export interface CodraRepoSummaryResult {
+  summary: string
+  architecture: string[]
+  risks: string[]
+  nextSteps: string[]
+}
+
+export interface CodraExplainInput {
+  language: string
+  code: string
+  level?: 'beginner' | 'intermediate' | 'expert'
+}
+
+export interface CodraExplainResult {
+  explanation: string
+  keyConcepts: string[]
+  suggestions?: string[]
+}
+
+export interface CodraReviewInput {
+  language: string
+  code: string
+  focus?: string[]
+  strictness?: 'gentle' | 'normal' | 'strict'
+}
+
+export interface CodraReviewResult {
+  issues: CodraReviewIssue[]
+  summary: string
+  score: number
+}
+
+export interface CodraReviewIssue {
+  severity: 'critical' | 'warning' | 'info'
+  category: string
+  title: string
+  description: string
+  line?: number
+  suggestion?: string
+}
+
+export interface CodraPlanInput {
+  task: string
+  context?: string
+  constraints?: string[]
+}
+
+export interface CodraPlanResult {
+  plan: string
+  steps: CodraPlanStep[]
+  risks: string[]
+  estimatedEffort: string
+}
+
+export interface CodraPlanStep {
+  order: number
+  title: string
+  description: string
+  files?: string[]
+  effort: 'small' | 'medium' | 'large'
+}
+
+export interface CodraSuccessResponse<T> {
+  id: string
+  object: string
+  result: T
+  usage: {
+    credits: number
+    action: string
+  }
+}
