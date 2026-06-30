@@ -1,15 +1,16 @@
 {
   "name": "@stacklane/sdk",
-  "version": "0.4.1",
-  "description": "Stacklane TypeScript SDK",
+  "version": "0.5.0",
+  "description": "Talocode Cloud SDK — @talocode/sdk (alias @stacklane/sdk)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "npx tsc && node --test dist/__tests__/talocode.test.js"
   },
-  "dependencies": {},
   "devDependencies": {
+    "@types/node": "^26.0.1",
     "typescript": "^5.7.3"
   }
 }

@@ -1,3 +1,5 @@
+// ─── Existing Stacklane client (backward compatible) ───
+
 export interface StacklaneClientOptions {
   baseUrl: string;
   accessToken?: string;
@@ -148,3 +150,19 @@ export function createStacklaneClient(options: StacklaneClientOptions) {
 }
 
 export type StacklaneClient = ReturnType<typeof createStacklaneClient>;
+
+// ─── Talocode Cloud SDK ───
+
+export { Talocode } from './talocode'
+export type { TalocodeOptions } from './talocode'
+export { TeraClient } from './tera'
+export { RouterClient } from './router'
+export { AgentBrowserClient } from './agent-browser'
+export {
+  TalocodeError,
+  TalocodeAuthError,
+  TalocodeInsufficientCreditsError,
+  TalocodeRateLimitError,
+  TalocodeValidationError,
+} from './errors'
+export * from './types'
