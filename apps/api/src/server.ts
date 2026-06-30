@@ -276,6 +276,40 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     return
   }
 
+  // ─── MCP (Model Context Protocol) Routes ──────────────────────────────
+
+  if (req.method === 'GET' && path === '/api/v1/cloud/mcp/tools') {
+    const { handleMcpToolList } = await import('./mcp/server')
+    const response = handleMcpToolList()
+    const body = await response.text()
+    sendJson(res, response.status, JSON.parse(body) as Record<string, unknown>)
+    return
+  }
+
+  if (path === '/mcp') {
+    const { handleMcpRequest } = await import('./mcp/server')
+    const protocol = req.headers['x-forwarded-proto'] ?? 'http'
+    const url = new URL(req.url ?? '/mcp', `${protocol}://${req.headers.host ?? 'localhost'}`)
+    const headers = new Headers()
+    for (const [key, value] of Object.entries(req.headers)) {
+      if (value) {
+        headers.set(key, Array.isArray(value) ? value.join(', ') : value)
+      }
+    }
+    const body = req.method === 'GET' || req.method === 'OPTIONS' ? undefined : await new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = []
+      req.on('data', (chunk: Buffer) => chunks.push(chunk))
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+      req.on('error', reject)
+    })
+    const webRequest = new Request(url.toString(), { method: req.method, headers, body })
+    const response = await handleMcpRequest(webRequest)
+    const responseBody = await response.text()
+    res.writeHead(response.status, Object.fromEntries(response.headers))
+    res.end(responseBody)
+    return
+  }
+
   // ─── Stripe Webhook (no session auth) ──────────────────────────────────
 
   if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {
