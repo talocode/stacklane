@@ -12,8 +12,19 @@ export const MCP_ERROR_CODES = {
   BACKEND_UNAVAILABLE: -32004,
 } as const
 
+export function extractBodyMessage(body: Record<string, unknown>): string {
+  const err = body.error
+  if (typeof err === 'string') return err
+  if (err && typeof err === 'object') {
+    const obj = err as Record<string, unknown>
+    if (typeof obj.message === 'string') return obj.message
+  }
+  if (typeof body.message === 'string') return body.message
+  return 'Unknown error'
+}
+
 export function mapHttpStatusToMcpError(status: number, body: Record<string, unknown>): JsonRpcError {
-  const message = (body.error as string) ?? (body.message as string) ?? `HTTP ${status}`
+  const message = extractBodyMessage(body)
 
   switch (status) {
     case 400:

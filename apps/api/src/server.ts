@@ -154,7 +154,27 @@ const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS ||
 const adapter = new MockProvisioningAdapter()
 const workerId = `worker-${randomUUID().slice(0, 8)}`
 
+process.on('uncaughtException', (error) => {
+  console.error('[FATAL] Uncaught exception:', error)
+  process.exitCode = 1
+})
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled rejection:', reason)
+})
+
 export { handler }
+
+const DB_TIMEOUT_MS = 15000
+
+async function queryWithTimeout(text: string, timeoutMs: number = DB_TIMEOUT_MS): Promise<any> {
+  return Promise.race([
+    db.query(text),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Database query timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ])
+}
 
 function requireLocalApiKey(req: IncomingMessage) {
   const authHeader = req.headers.authorization
@@ -219,6 +239,23 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
   if (req.method === 'GET' && path === '/api/v1/health') {
     sendJson(res, 200, { ok: true, service: 'stacklane-api', version: '0.4.0', mode: 'local-first', timestamp: new Date().toISOString() })
+    return
+  }
+
+  if (req.method === 'GET' && (path === '/api/v1/cloud/health' || path === '/cloud/health')) {
+    let dbOk = false
+    try {
+      await queryWithTimeout('SELECT 1', 5000)
+      dbOk = true
+    } catch {}
+    sendJson(res, 200, {
+      ok: true,
+      service: 'talocode-cloud-api',
+      version: '0.4.0',
+      timestamp: new Date().toISOString(),
+      database: dbOk ? 'connected' : 'disconnected',
+      uptime: process.uptime(),
+    })
     return
   }
 
@@ -1255,9 +1292,15 @@ export async function startServer(options?: { skipBootstrap?: boolean; port?: nu
   const port = options?.port ?? config.port
   const skipBootstrap = options?.skipBootstrap ?? process.env.STACKLANE_SKIP_BOOTSTRAP === '1'
   const startWorker = options?.startWorker ?? process.env.STACKLANE_SKIP_WORKER !== '1'
+
   if (!skipBootstrap) {
-    await db.query('SELECT 1')
-    await ensureBootstrapData()
+    try {
+      await queryWithTimeout('SELECT 1')
+      await ensureBootstrapData()
+      console.log('[startup] Database bootstrap complete')
+    } catch (error) {
+      console.error('[startup] Database bootstrap failed (continuing without DB):', error)
+    }
   }
 
   let interval: NodeJS.Timeout | undefined
@@ -1269,8 +1312,16 @@ export async function startServer(options?: { skipBootstrap?: boolean; port?: nu
     }, WORKER_INTERVAL_MS)
   }
 
-  await new Promise<void>((resolve) => {
-    server.listen(port, () => resolve())
+  await new Promise<void>((resolve, reject) => {
+    const onError = (error: Error) => {
+      server.removeListener('error', onError)
+      reject(error)
+    }
+    server.on('error', onError)
+    server.listen(port, () => {
+      server.removeListener('error', onError)
+      resolve()
+    })
   })
 
   return {
@@ -1289,13 +1340,37 @@ export async function startServer(options?: { skipBootstrap?: boolean; port?: nu
 }
 
 async function start() {
-  const started = await startServer()
-  console.log(`Stacklane API running on http://localhost:${started.port}`)
+  try {
+    const started = await startServer()
+    console.log(`[startup] Stacklane API running on http://localhost:${started.port}`)
+
+    let shuttingDown = false
+    const shutdown = async (signal: string) => {
+      if (shuttingDown) return
+      shuttingDown = true
+      console.log(`[shutdown] Received ${signal}, closing server...`)
+      try {
+        await started.close()
+        console.log('[shutdown] Server closed gracefully')
+      } catch (error) {
+        console.error('[shutdown] Error during close:', error)
+      }
+      process.exit(0)
+    }
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'))
+    process.on('SIGINT', () => shutdown('SIGINT'))
+    process.on('SIGHUP', () => shutdown('SIGHUP'))
+  } catch (error) {
+    console.error('[startup] Failed to start server:', error)
+    process.exit(1)
+  }
 }
 
-if (require.main === module) {
-  start().catch((error) => {
-    console.error(error)
-    process.exit(1)
-  })
+const isMainModule = import.meta.url === `file://${process.argv[1]}.ts`
+  || import.meta.url === `file://${process.argv[1]}`
+  || require.main === module
+
+if (isMainModule) {
+  start()
 }

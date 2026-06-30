@@ -3,7 +3,7 @@ import assert from 'node:assert'
 import { handleMcpRequest, handleMcpToolList } from '../server'
 import { ALL_TOOLS, TOOL_MAP } from '../tools'
 import { extractApiKey, validateMcpAuth, redactAuthHeader } from '../auth'
-import { mapHttpStatusToMcpError, MCP_ERROR_CODES } from '../errors'
+import { mapHttpStatusToMcpError, extractBodyMessage, MCP_ERROR_CODES } from '../errors'
 
 const ORIGINAL_ENV = { ...process.env }
 
@@ -292,6 +292,49 @@ describe('Talocode MCP v0.1', () => {
       const tool = TOOL_MAP.get('cloud_pricing')!
       assert.strictEqual(tool.route, '/api/v1/cloud/pricing')
       assert.strictEqual(tool.method, 'GET')
+    })
+  })
+
+  describe('error message extraction', () => {
+    it('extracts string error directly', () => {
+      assert.strictEqual(extractBodyMessage({ error: 'something went wrong' }), 'something went wrong')
+    })
+
+    it('extracts message from nested error object', () => {
+      const body = { error: { code: 'UNAUTHORIZED', message: 'Authentication required.' } }
+      assert.strictEqual(extractBodyMessage(body), 'Authentication required.')
+    })
+
+    it('extracts top-level message when error is absent', () => {
+      assert.strictEqual(extractBodyMessage({ message: 'top-level msg' }), 'top-level msg')
+    })
+
+    it('returns fallback when no message found', () => {
+      assert.strictEqual(extractBodyMessage({}), 'Unknown error')
+    })
+
+    it('handles nested error with empty message', () => {
+      const body = { error: { code: 'FOO', message: '' } }
+      assert.strictEqual(extractBodyMessage(body), '')
+    })
+  })
+
+  describe('MCP GET tool does not pass body', () => {
+    it('cloud_pricing tool is GET method', () => {
+      const tool = TOOL_MAP.get('cloud_pricing')!
+      assert.strictEqual(tool.method, 'GET')
+    })
+
+    it('GET tools have no body in callTool', () => {
+      const tool = TOOL_MAP.get('cloud_pricing')!
+      const body = tool.method === 'POST' ? { args: true } : undefined
+      assert.strictEqual(body, undefined)
+    })
+
+    it('POST tools have body in callTool', () => {
+      const tool = TOOL_MAP.get('router_chat')!
+      const body = tool.method === 'POST' ? { model: 'test' } : undefined
+      assert.deepStrictEqual(body, { model: 'test' })
     })
   })
 })
