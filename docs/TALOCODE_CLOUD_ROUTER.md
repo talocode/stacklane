@@ -5,7 +5,7 @@ OpenAI-compatible AI provider routing layer for Talocode Cloud. Routes chat comp
 ## Quick Start
 
 ```bash
-curl https://api.talocode.xyz/v1/chat/completions \
+curl https://api.talocode.site/v1/chat/completions \
   -H "Authorization: Bearer $TALOCODE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -95,7 +95,7 @@ No fallback on: invalid requests, safety refusals, malformed API keys, or insuff
 ### Codra
 
 ```bash
-curl https://api.talocode.xyz/v1/chat/completions \
+curl https://api.talocode.site/v1/chat/completions \
   -H "Authorization: Bearer $TALOCODE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -110,7 +110,7 @@ curl https://api.talocode.xyz/v1/chat/completions \
 ### Agent Browser
 
 ```bash
-curl https://api.talocode.xyz/v1/chat/completions \
+curl https://api.talocode.site/v1/chat/completions \
   -H "Authorization: Bearer $TALOCODE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -125,7 +125,7 @@ curl https://api.talocode.xyz/v1/chat/completions \
 ### Tera Browser
 
 ```bash
-curl https://api.talocode.xyz/v1/chat/completions \
+curl https://api.talocode.site/v1/chat/completions \
   -H "Authorization: Bearer $TALOCODE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -139,7 +139,7 @@ curl https://api.talocode.xyz/v1/chat/completions \
 ### WorkLane
 
 ```bash
-curl https://api.talocode.xyz/v1/chat/completions \
+curl https://api.talocode.site/v1/chat/completions \
   -H "Authorization: Bearer $TALOCODE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{

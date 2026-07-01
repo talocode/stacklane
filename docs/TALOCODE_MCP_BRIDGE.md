@@ -5,7 +5,7 @@ The Talocode MCP bridge is a local stdio-based proxy that forwards MCP requests 
 ## How It Works
 
 ```
-MCP Client (stdio) → talocode-mcp (local) → https://api.talocode.xyz/mcp (remote)
+MCP Client (stdio) → talocode-mcp (local) → https://api.talocode.site/mcp (remote)
 ```
 
 1. Your MCP client spawns `npx @talocode/mcp` as a local subprocess
@@ -29,7 +29,7 @@ npx @talocode/mcp
 | Env Var | Required | Default | Description |
 |---------|----------|---------|-------------|
 | `TALOCODE_API_KEY` | Yes | — | Talocode Cloud API key |
-| `TALOCODE_MCP_URL` | No | `https://api.talocode.xyz/mcp` | Remote MCP endpoint |
+| `TALOCODE_MCP_URL` | No | `https://api.talocode.site/mcp` | Remote MCP endpoint |
 
 For local development:
 

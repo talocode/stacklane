@@ -160,6 +160,7 @@ export { RouterClient } from './router'
 export { AgentBrowserClient } from './agent-browser'
 export { ClipLoopClient } from './cliploop'
 export { CodraClient } from './codra'
+export { SkillsClient } from './skills'
 export {
   CodraClientPlaceholder,
   TradiaClientPlaceholder,

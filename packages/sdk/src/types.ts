@@ -383,3 +383,82 @@ export interface CodraSuccessResponse<T> {
     action: string
   }
 }
+
+// ─── Skills API ───
+
+export interface SkillsGenerateProfileInput {
+  username: string
+  target: 'cursor' | 'claude' | 'opencode' | 'codra'
+  focus?: string[]
+  includeRepositories?: boolean
+  maxRepositories?: number
+}
+
+export interface SkillsGenerateRepoInput {
+  repoUrl: string
+  target: 'cursor' | 'claude' | 'opencode' | 'codra'
+  focus?: string[]
+}
+
+export interface SkillsGenerateDocsInput {
+  url: string
+  target: 'cursor' | 'claude' | 'opencode' | 'codra'
+  focus?: string[]
+}
+
+export interface SkillsGenerateTextInput {
+  name: string
+  content: string
+  target: 'cursor' | 'claude' | 'opencode' | 'codra'
+  focus?: string[]
+}
+
+export interface SkillsExportInput {
+  skill: {
+    name: string
+    skillMd: string
+    metadata?: Record<string, unknown>
+  }
+}
+
+export interface SkillsExportFile {
+  path: string
+  content: string
+}
+
+export interface SkillsExportResult {
+  files: SkillsExportFile[]
+}
+
+export interface SkillsGenerated {
+  name: string
+  title: string
+  description: string
+  skillMd: string
+  references?: { path: string; content: string }[]
+  metadata: Record<string, unknown>
+}
+
+export interface SkillsGenerateResult {
+  id: string
+  object: string
+  source: {
+    type: 'github_profile' | 'github_repo' | 'docs' | 'text'
+    username?: string
+    repoUrl?: string
+    url?: string
+    name?: string
+  }
+  skill: SkillsGenerated
+  exports: {
+    cursor?: { files: SkillsExportFile[] }
+    claude?: { files: SkillsExportFile[] }
+  }
+  usage: UsageMeta
+}
+
+export interface SkillsHealthResponse {
+  status: string
+  version: string
+  endpoints: string[]
+}

@@ -180,3 +180,90 @@ export const cloudPricingSchema: McpToolInputSchema = {
   properties: {},
   additionalProperties: false,
 }
+
+export const skillsGenerateProfileSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    username: { type: 'string', description: 'GitHub username to generate skill from' },
+    target: { type: 'string', enum: ['cursor', 'claude', 'opencode', 'codra'], description: 'Target AI agent platform' },
+    focus: { type: 'array', items: { type: 'string' }, description: 'Focus areas for the skill' },
+    includeRepositories: { type: 'boolean', description: 'Whether to include repo analysis' },
+    maxRepositories: { type: 'number', description: 'Maximum number of repos to analyze' },
+  },
+  required: ['username'],
+  additionalProperties: false,
+}
+
+export const skillsGenerateRepoSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    repoUrl: { type: 'string', description: 'Full GitHub repository URL' },
+    target: { type: 'string', enum: ['cursor', 'claude', 'opencode', 'codra'], description: 'Target AI agent platform' },
+    focus: { type: 'array', items: { type: 'string' }, description: 'Focus areas for the skill' },
+  },
+  required: ['repoUrl'],
+  additionalProperties: false,
+}
+
+export const skillsGenerateDocsSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'Documentation URL to generate skill from' },
+    target: { type: 'string', enum: ['cursor', 'claude', 'opencode', 'codra'], description: 'Target AI agent platform' },
+    focus: { type: 'array', items: { type: 'string' }, description: 'Focus areas for the skill' },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const skillsGenerateTextSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string', description: 'Name for the generated skill' },
+    content: { type: 'string', description: 'Text content to generate skill from' },
+    target: { type: 'string', enum: ['cursor', 'claude', 'opencode', 'codra'], description: 'Target AI agent platform' },
+    focus: { type: 'array', items: { type: 'string' }, description: 'Focus areas for the skill' },
+  },
+  required: ['name', 'content'],
+  additionalProperties: false,
+}
+
+export const skillsExportCursorSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    skill: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Skill name' },
+        skillMd: { type: 'string', description: 'Skill markdown content' },
+        title: { type: 'string', description: 'Skill title' },
+        description: { type: 'string', description: 'Skill description' },
+        metadata: { type: 'object', description: 'Optional metadata' },
+      },
+      required: ['name', 'skillMd'],
+      description: 'Skill object to export',
+    },
+  },
+  required: ['skill'],
+  additionalProperties: false,
+}
+
+export const skillsExportClaudeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    skill: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'Skill name' },
+        skillMd: { type: 'string', description: 'Skill markdown content' },
+        title: { type: 'string', description: 'Skill title' },
+        description: { type: 'string', description: 'Skill description' },
+        metadata: { type: 'object', description: 'Optional metadata' },
+      },
+      required: ['name', 'skillMd'],
+      description: 'Skill object to export',
+    },
+  },
+  required: ['skill'],
+  additionalProperties: false,
+}

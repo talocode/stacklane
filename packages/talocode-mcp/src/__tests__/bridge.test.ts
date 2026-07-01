@@ -24,7 +24,7 @@ describe('Talocode MCP Bridge', () => {
     it('uses default MCP URL when TALOCODE_MCP_URL not set', () => {
       delete process.env.TALOCODE_MCP_URL
       const config = loadConfig()
-      assert.strictEqual(config.mcpUrl, 'https://api.talocode.xyz/mcp')
+      assert.strictEqual(config.mcpUrl, 'https://api.talocode.site/mcp')
     })
 
     it('uses custom TALOCODE_MCP_URL when set', () => {
@@ -234,10 +234,10 @@ describe('Talocode MCP Bridge', () => {
       }
     })
 
-    it('defaults MCP URL to https://api.talocode.xyz/mcp', () => {
+    it('defaults MCP URL to https://api.talocode.site/mcp', () => {
       delete process.env.TALOCODE_MCP_URL
       const c = loadConfig()
-      assert.strictEqual(c.mcpUrl, 'https://api.talocode.xyz/mcp')
+      assert.strictEqual(c.mcpUrl, 'https://api.talocode.site/mcp')
     })
 
     it('accepts localhost dev URL', () => {

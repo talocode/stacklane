@@ -347,6 +347,216 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     return
   }
 
+  // ─── Talocode Skills API (API-key authenticated) ──────────────────────
+
+  if (path.startsWith('/v1/skills/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+
+    if (req.method === 'GET' && path === '/v1/skills/health') {
+      const { generateFromProfile } = await import('./services/skills')
+      sendData(res, 200, {
+        status: 'ok',
+        version: '0.1.0',
+        endpoints: [
+          'POST /v1/skills/generate/github-profile',
+          'POST /v1/skills/generate/github-repo',
+          'POST /v1/skills/generate/docs',
+          'POST /v1/skills/generate/text',
+          'POST /v1/skills/export/cursor',
+          'POST /v1/skills/export/claude',
+          'GET /v1/skills/health',
+        ],
+      })
+      return
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req)
+
+      if (path === '/v1/skills/generate/github-profile') {
+        const username = typeof body.username === 'string' ? body.username.trim() : ''
+        if (!username) throw new HttpError(422, 'VALIDATION_ERROR', 'username is required.')
+        const target = typeof body.target === 'string' ? body.target : 'cursor'
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'skills',
+          action: 'generate.github_profile',
+          requestId: undefined,
+          metadata: { username, target },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        const { generateFromProfile } = await import('./services/skills')
+        const result = await generateFromProfile({
+          username,
+          target,
+          focus: Array.isArray(body.focus) ? body.focus.filter((f: unknown) => typeof f === 'string') : undefined,
+          includeRepositories: body.includeRepositories === true,
+          maxRepositories: typeof body.maxRepositories === 'number' ? body.maxRepositories : undefined,
+        })
+        sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'skills.generate.github_profile' } })
+        return
+      }
+
+      if (path === '/v1/skills/generate/github-repo') {
+        const repoUrl = typeof body.repoUrl === 'string' ? body.repoUrl.trim() : ''
+        if (!repoUrl) throw new HttpError(422, 'VALIDATION_ERROR', 'repoUrl is required.')
+        if (!repoUrl.startsWith('https://github.com/')) throw new HttpError(422, 'VALIDATION_ERROR', 'Only public GitHub repository URLs are supported.')
+        const target = typeof body.target === 'string' ? body.target : 'cursor'
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'skills',
+          action: 'generate.github_repo',
+          requestId: undefined,
+          metadata: { repoUrl, target },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        const { generateFromRepo } = await import('./services/skills')
+        const result = await generateFromRepo({
+          repoUrl,
+          target,
+          focus: Array.isArray(body.focus) ? body.focus.filter((f: unknown) => typeof f === 'string') : undefined,
+        })
+        sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'skills.generate.github_repo' } })
+        return
+      }
+
+      if (path === '/v1/skills/generate/docs') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+        const target = typeof body.target === 'string' ? body.target : 'cursor'
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'skills',
+          action: 'generate.docs',
+          requestId: undefined,
+          metadata: { url, target },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        const { generateFromDocs } = await import('./services/skills')
+        try {
+          const result = await generateFromDocs({ url, target, focus: Array.isArray(body.focus) ? body.focus.filter((f: unknown) => typeof f === 'string') : undefined })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'skills.generate.docs' } })
+        } catch (error) {
+          throw new HttpError(422, 'FETCH_ERROR', error instanceof Error ? error.message : 'Failed to fetch docs URL.')
+        }
+        return
+      }
+
+      if (path === '/v1/skills/generate/text') {
+        const name = typeof body.name === 'string' ? body.name.trim() : ''
+        const content = typeof body.content === 'string' ? body.content : ''
+        if (!name || !content) throw new HttpError(422, 'VALIDATION_ERROR', 'name and content are required.')
+        const target = typeof body.target === 'string' ? body.target : 'cursor'
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'skills',
+          action: 'generate.text',
+          requestId: undefined,
+          metadata: { name, target },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        const { generateFromText } = await import('./services/skills')
+        const result = await generateFromText({ name, content, target, focus: Array.isArray(body.focus) ? body.focus.filter((f: unknown) => typeof f === 'string') : undefined })
+        sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'skills.generate.text' } })
+        return
+      }
+
+      if (path === '/v1/skills/export/cursor') {
+        const skill = body.skill as Record<string, unknown> | undefined
+        if (!skill || !skill.name || !skill.skillMd) throw new HttpError(422, 'VALIDATION_ERROR', 'skill object with name and skillMd is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'skills',
+          action: 'export.cursor',
+          requestId: undefined,
+          metadata: { skillName: skill.name },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        const { exportForCursor } = await import('./services/skills')
+        const result = exportForCursor({
+          name: skill.name as string,
+          title: (skill.title as string) || skill.name as string,
+          description: (skill.description as string) || '',
+          skillMd: skill.skillMd as string,
+          metadata: (skill.metadata as Record<string, unknown>) || {},
+        })
+        sendData(res, 200, { id: 'skill_exp_' + randomUUID().slice(0, 12), object: 'skills.exported', files: result.cursor?.files ?? [], usage: { credits: chargeResult.event.credits, action: 'skills.export.cursor' } })
+        return
+      }
+
+      if (path === '/v1/skills/export/claude') {
+        const skill = body.skill as Record<string, unknown> | undefined
+        if (!skill || !skill.name || !skill.skillMd) throw new HttpError(422, 'VALIDATION_ERROR', 'skill object with name and skillMd is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'skills',
+          action: 'export.claude',
+          requestId: undefined,
+          metadata: { skillName: skill.name },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        const { exportForClaude } = await import('./services/skills')
+        const result = exportForClaude({
+          name: skill.name as string,
+          title: (skill.title as string) || skill.name as string,
+          description: (skill.description as string) || '',
+          skillMd: skill.skillMd as string,
+          metadata: (skill.metadata as Record<string, unknown>) || {},
+        })
+        sendData(res, 200, { id: 'skill_exp_' + randomUUID().slice(0, 12), object: 'skills.exported', files: result.claude?.files ?? [], usage: { credits: chargeResult.event.credits, action: 'skills.export.claude' } })
+        return
+      }
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'Skills API route not found.', { method: req.method, path })
+  }
+
   // ─── Stripe Webhook (no session auth) ──────────────────────────────────
 
   if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {

@@ -230,7 +230,7 @@ export async function callProvider(
     }
 
     if (providerName === 'openrouter') {
-      headers['HTTP-Referer'] = 'https://talocode.xyz'
+      headers['HTTP-Referer'] = 'https://talocode.site'
       headers['X-Title'] = 'Talocode Cloud Router'
     }
 

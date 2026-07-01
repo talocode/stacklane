@@ -31,6 +31,12 @@ describe('Talocode MCP v0.1', () => {
         'cliploop_video_render',
         'cloud_pricing',
         'router_chat',
+        'skills_export_claude',
+        'skills_export_cursor',
+        'skills_generate_docs',
+        'skills_generate_github_profile',
+        'skills_generate_github_repo',
+        'skills_generate_text',
         'tera_coding_explain',
         'tera_coding_review',
         'tera_writing_draft',
@@ -335,6 +341,44 @@ describe('Talocode MCP v0.1', () => {
       const tool = TOOL_MAP.get('router_chat')!
       const body = tool.method === 'POST' ? { model: 'test' } : undefined
       assert.deepStrictEqual(body, { model: 'test' })
+    })
+
+    it('skills tools reference correct routes', () => {
+      const profile = TOOL_MAP.get('skills_generate_github_profile')!
+      assert.strictEqual(profile.route, '/v1/skills/generate/github-profile')
+      assert.strictEqual(profile.product, 'skills')
+      assert.strictEqual(profile.estimatedCredits, 80)
+
+      const repo = TOOL_MAP.get('skills_generate_github_repo')!
+      assert.strictEqual(repo.route, '/v1/skills/generate/github-repo')
+      assert.strictEqual(repo.estimatedCredits, 100)
+
+      const docs = TOOL_MAP.get('skills_generate_docs')!
+      assert.strictEqual(docs.route, '/v1/skills/generate/docs')
+      assert.strictEqual(docs.estimatedCredits, 100)
+
+      const text = TOOL_MAP.get('skills_generate_text')!
+      assert.strictEqual(text.route, '/v1/skills/generate/text')
+      assert.strictEqual(text.estimatedCredits, 40)
+
+      const cursor = TOOL_MAP.get('skills_export_cursor')!
+      assert.strictEqual(cursor.route, '/v1/skills/export/cursor')
+      assert.strictEqual(cursor.estimatedCredits, 10)
+
+      const claude = TOOL_MAP.get('skills_export_claude')!
+      assert.strictEqual(claude.route, '/v1/skills/export/claude')
+      assert.strictEqual(claude.estimatedCredits, 10)
+    })
+
+    it('skills_generate_github_profile requires username', () => {
+      const tool = TOOL_MAP.get('skills_generate_github_profile')!
+      assert.ok(tool.inputSchema.required?.includes('username'))
+    })
+
+    it('skills_generate_text requires name and content', () => {
+      const tool = TOOL_MAP.get('skills_generate_text')!
+      assert.ok(tool.inputSchema.required?.includes('name'))
+      assert.ok(tool.inputSchema.required?.includes('content'))
     })
   })
 })

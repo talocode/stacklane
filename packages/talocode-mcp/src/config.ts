@@ -10,7 +10,7 @@ export function loadConfig(): BridgeConfig {
     process.exit(1)
   }
 
-  const mcpUrl = process.env.TALOCODE_MCP_URL ?? 'https://api.talocode.xyz/mcp'
+  const mcpUrl = process.env.TALOCODE_MCP_URL ?? 'https://api.talocode.site/mcp'
 
   return { apiKey, mcpUrl }
 }

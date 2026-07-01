@@ -14,7 +14,7 @@ describe('Talocode SDK', () => {
       delete process.env.TALOCODE_BASE_URL
       delete process.env.TALOCODE_API_KEY
       const c = new Talocode()
-      assert.strictEqual(c.baseUrl, 'https://api.talocode.xyz')
+      assert.strictEqual(c.baseUrl, 'https://api.talocode.site')
       assert.strictEqual(c.apiKey, undefined)
       assert.strictEqual(c.timeoutMs, 30000)
     })
@@ -109,6 +109,50 @@ describe('Talocode SDK', () => {
       await assert.rejects(() => c.tradia.analyze(), TalocodeNotImplementedError)
       await assert.rejects(() => c.signallane.detect(), TalocodeNotImplementedError)
       await assert.rejects(() => c.worklane.run(), TalocodeNotImplementedError)
+    })
+
+    it('has skills namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.skills)
+      assert.strictEqual(typeof c.skills.health, 'function')
+      assert.strictEqual(typeof c.skills.generate.githubProfile, 'function')
+      assert.strictEqual(typeof c.skills.generate.githubRepo, 'function')
+      assert.strictEqual(typeof c.skills.generate.docs, 'function')
+      assert.strictEqual(typeof c.skills.generate.text, 'function')
+      assert.strictEqual(typeof c.skills.export.cursor, 'function')
+      assert.strictEqual(typeof c.skills.export.claude, 'function')
+    })
+
+    it('skills routes are correct', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ id: 'test', object: 'skills.generated', source: { type: 'text' }, skill: { name: 'test', title: 'test', description: 'test', skillMd: '# Test', metadata: {} }, exports: {}, usage: { credits: 40, action: 'skills.generate.text' } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.skills.generate.text({ name: 'test', content: 'test content', target: 'cursor' })
+        assert.ok(capturedUrl.includes('/v1/skills/generate/text'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('skills health uses /v1/skills/health', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ status: 'ok', version: '0.1.0', endpoints: [] }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.skills.health()
+        assert.ok(capturedUrl.includes('/v1/skills/health'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
     })
   })
 

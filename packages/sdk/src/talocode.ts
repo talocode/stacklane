@@ -3,6 +3,7 @@ import { RouterClient } from './router'
 import { AgentBrowserClient } from './agent-browser'
 import { ClipLoopClient } from './cliploop'
 import { CodraClient } from './codra'
+import { SkillsClient } from './skills'
 import {
   TradiaClientPlaceholder,
   SignalLaneClientPlaceholder,
@@ -16,7 +17,7 @@ export interface TalocodeOptions {
   headers?: Record<string, string>
 }
 
-const DEFAULT_BASE_URL = 'https://api.talocode.xyz'
+const DEFAULT_BASE_URL = 'https://api.talocode.site'
 const DEFAULT_TIMEOUT_MS = 30000
 
 export class Talocode {
@@ -25,6 +26,7 @@ export class Talocode {
   public agentBrowser: AgentBrowserClient
   public cliploop: ClipLoopClient
   public codra: CodraClient
+  public skills: SkillsClient
   public tradia: TradiaClientPlaceholder
   public signallane: SignalLaneClientPlaceholder
   public worklane: WorkLaneClientPlaceholder
@@ -47,6 +49,7 @@ export class Talocode {
     this.agentBrowser = new AgentBrowserClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.cliploop = new ClipLoopClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.codra = new CodraClient(this.baseUrl, this.apiKey, this.timeoutMs)
+    this.skills = new SkillsClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.tradia = new TradiaClientPlaceholder()
     this.signallane = new SignalLaneClientPlaceholder()
     this.worklane = new WorkLaneClientPlaceholder()

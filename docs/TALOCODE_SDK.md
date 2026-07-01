@@ -39,7 +39,7 @@ const result = await talocode.tera.writing.rewrite({
 ```ts
 const talocode = new Talocode({
   apiKey: "tk_dev_xxx",           // defaults to process.env.TALOCODE_API_KEY
-  baseUrl: "https://custom.url",  // defaults to process.env.TALOCODE_BASE_URL or https://api.talocode.xyz
+  baseUrl: "https://custom.url",  // defaults to process.env.TALOCODE_BASE_URL or https://api.talocode.site
   timeoutMs: 30000,               // per-request timeout (default: 30000)
 });
 ```

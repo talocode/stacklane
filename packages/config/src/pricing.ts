@@ -55,6 +55,14 @@ export const TALOCODE_CLOUD_PRICING = {
       "compression.logs": 2,
       "compression.diff": 2,
       "compression.trace": 3
+    },
+    skills: {
+      "generate.github_profile": 80,
+      "generate.github_repo": 100,
+      "generate.docs": 100,
+      "generate.text": 40,
+      "export.cursor": 10,
+      "export.claude": 10
     }
   }
 } as const

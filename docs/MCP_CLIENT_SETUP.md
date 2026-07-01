@@ -8,7 +8,7 @@ Add to your project's `.cursor/mcp.json`:
 {
   "mcpServers": {
     "talocode": {
-      "url": "https://api.talocode.xyz/mcp",
+      "url": "https://api.talocode.site/mcp",
       "headers": {
         "Authorization": "Bearer ${TALOCODE_API_KEY}"
       }
@@ -23,7 +23,7 @@ Or use a local `.env` file with the key:
 {
   "mcpServers": {
     "talocode": {
-      "url": "https://api.talocode.xyz/mcp",
+      "url": "https://api.talocode.site/mcp",
       "headers": {
         "X-Api-Key": "${TALOCODE_API_KEY}"
       }
@@ -40,7 +40,7 @@ Add to your `claude_desktop_config.json`:
 {
   "mcpServers": {
     "talocode": {
-      "url": "https://api.talocode.xyz/mcp",
+      "url": "https://api.talocode.site/mcp",
       "headers": {
         "Authorization": "Bearer ${TALOCODE_API_KEY}"
       }
@@ -57,7 +57,7 @@ Add to your `.vscode/mcp.json` or workspace settings:
 {
   "mcpServers": {
     "talocode": {
-      "url": "https://api.talocode.xyz/mcp",
+      "url": "https://api.talocode.site/mcp",
       "headers": {
         "Authorization": "Bearer ${TALOCODE_API_KEY}"
       }
@@ -74,7 +74,7 @@ Add to your OpenCode configuration:
 {
   "mcpServers": {
     "talocode": {
-      "url": "https://api.talocode.xyz/mcp",
+      "url": "https://api.talocode.site/mcp",
       "headers": {
         "Authorization": "Bearer ${TALOCODE_API_KEY}"
       }
@@ -118,7 +118,7 @@ For MCP clients that do not support custom HTTP headers (Claude Desktop, Cursor,
 }
 ```
 
-The bridge reads `TALOCODE_API_KEY` from the environment and forwards requests to `https://api.talocode.xyz/mcp` with the proper `Authorization` header.
+The bridge reads `TALOCODE_API_KEY` from the environment and forwards requests to `https://api.talocode.site/mcp` with the proper `Authorization` header.
 
 For local development:
 

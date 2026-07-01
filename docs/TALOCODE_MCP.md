@@ -5,12 +5,12 @@ Talocode MCP exposes Talocode Cloud product APIs through the [Model Context Prot
 ## Endpoint
 
 ```
-https://api.talocode.xyz/mcp
+https://api.talocode.site/mcp
 ```
 
 ## Status
 
-**v0.1 — Local/demo.** The MCP server is implemented and tested but requires the Talocode Cloud API to be live at `api.talocode.xyz` for production use. For local testing, point your MCP client at a running Stacklane API instance.
+**v0.1 — Local/demo.** The MCP server is implemented and tested but requires the Talocode Cloud API to be live at `api.talocode.site` for production use. For local testing, point your MCP client at a running Stacklane API instance.
 
 ## Authentication
 
@@ -105,7 +105,7 @@ For clients that do not support custom HTTP headers, use `@talocode/mcp` as a lo
 npx @talocode/mcp
 ```
 
-The bridge forwards all MCP requests to `https://api.talocode.xyz/mcp` with `Authorization: Bearer $TALOCODE_API_KEY`. Set `TALOCODE_API_KEY` in the environment.
+The bridge forwards all MCP requests to `https://api.talocode.site/mcp` with `Authorization: Bearer $TALOCODE_API_KEY`. Set `TALOCODE_API_KEY` in the environment.
 
 See [TALOCODE_MCP_BRIDGE.md](./TALOCODE_MCP_BRIDGE.md) for full bridge documentation.
 

@@ -116,7 +116,7 @@ stripe trigger checkout.session.completed
 - [ ] Set `STRIPE_PUBLISHABLE_KEY` (live)
 - [ ] Set `STRIPE_WEBHOOK_SECRET` (live)
 - [ ] Register webhook endpoint in Stripe Dashboard → Webhooks → Add endpoint
-- [ ] URL: `https://api.talocode.xyz/api/v1/cloud/billing/stripe/webhook`
+- [ ] URL: `https://api.talocode.site/api/v1/cloud/billing/stripe/webhook`
 - [ ] Events: `checkout.session.completed`
 - [ ] Set `TALOCODE_CLOUD_SUCCESS_URL` to production dashboard URL
 - [ ] Verify `TALOCODE_ALLOW_MANUAL_TOPUPS` is NOT set (disabled by default in production)
