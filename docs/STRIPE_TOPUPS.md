@@ -87,15 +87,19 @@ Unsupported events are silently ignored.
 
 ## Testing with Stripe CLI
 
+See the dedicated guide: [`STRIPE_CLI_SETUP.md`](./STRIPE_CLI_SETUP.md)
+
+Quick reference:
+
 ```bash
-# Install Stripe CLI and login
-stripe login
+# Automated setup script (handles secrets safely)
+./scripts/stripe-cli-dev.sh
 
-# Forward webhooks to local server
-stripe listen --forward-to localhost:4000/api/v1/cloud/billing/stripe/webhook
+# Trigger handled webhook events
+./scripts/stripe-trigger-test-events.sh
 
-# Trigger a test event
-stripe trigger checkout.session.completed
+# Validate setup
+node scripts/check-stripe-cli.mjs
 ```
 
 ## Environment Variables
