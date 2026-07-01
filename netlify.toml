@@ -1,0 +1,25 @@
+# Netlify deployment config for Stacklane API
+# Primary target: https://api.talocode.site
+
+[build]
+  command = "npm install -g pnpm@10 && pnpm install --frozen-lockfile && pnpm --filter @stacklane/api build"
+  publish = "apps/api/dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["pg", "stripe", "drizzle-orm", "zod"]
+  included_files = ["apps/api/src/**/*"]
+  timeout = 26
+
+[context.production]
+  environment = { NODE_ENV = "production" }
+
+[context.deploy-preview]
+  command = "pnpm install --frozen-lockfile"
+  publish = "apps/web/.next"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api"
+  status = 200
