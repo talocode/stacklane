@@ -29,7 +29,9 @@ export default function BillingOverviewPage() {
           apiClient.listCloudTransactions(pid).catch(() => [] as CloudTransaction[]),
         ])
       })
-      .then(([w, txs]) => {
+      .then((result) => {
+        if (!result) return
+        const [w, txs] = result
         if (w) setWallet(w)
         setTransactions(txs as CloudTransaction[])
         setLoading(false)
