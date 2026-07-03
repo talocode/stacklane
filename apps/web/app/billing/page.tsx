@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { PageScaffold, Panel, MetaChip } from '@/components/app-shell'
 import { apiClient, formatTimestamp } from '@/lib/api-client'
 import type { CloudWallet, CloudTransaction } from '@/lib/api-types'
-import { Wallet, ArrowUpRight, ArrowDownLeft, Plus, CreditCard } from 'lucide-react'
+import { Wallet, ArrowUpLeft, ArrowDownLeft, Plus, CreditCard } from 'lucide-react'
 
 export default function BillingOverviewPage() {
   const router = useRouter()
