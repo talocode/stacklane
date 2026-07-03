@@ -2,7 +2,7 @@ export interface JsonRpcRequest {
   jsonrpc: '2.0'
   method: string
   params?: Record<string, unknown>
-  id: string | number
+  id: string | number | null
 }
 
 export interface JsonRpcError {
