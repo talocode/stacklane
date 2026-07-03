@@ -1528,7 +1528,7 @@ export async function startServer(options?: { skipBootstrap?: boolean; port?: nu
       reject(error)
     }
     server.on('error', onError)
-    server.listen(port, () => {
+    server.listen(port, '0.0.0.0', () => {
       server.removeListener('error', onError)
       resolve()
     })
@@ -1552,7 +1552,7 @@ export async function startServer(options?: { skipBootstrap?: boolean; port?: nu
 async function start() {
   try {
     const started = await startServer()
-    console.log(`[startup] Stacklane API running on http://localhost:${started.port}`)
+    console.log(`[startup] Stacklane API running on 0.0.0.0:${started.port} (PORT=${process.env.PORT || 'not set'})`)
 
     let shuttingDown = false
     const shutdown = async (signal: string) => {
