@@ -316,7 +316,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
   // ─── MCP (Model Context Protocol) Routes ──────────────────────────────
 
   if (req.method === 'GET' && path === '/api/v1/cloud/mcp/tools') {
-    const { handleMcpToolList } = await import('./mcp/server')
+    const { handleMcpToolList } = await import('./mcp/server.js')
     const response = handleMcpToolList()
     const body = await response.text()
     sendJson(res, response.status, JSON.parse(body) as Record<string, unknown>)
@@ -324,7 +324,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (path === '/mcp') {
-    const { handleMcpRequest } = await import('./mcp/server')
+    const { handleMcpRequest } = await import('./mcp/server.js')
     const protocol = req.headers['x-forwarded-proto'] ?? 'http'
     const url = new URL(req.url ?? '/mcp', `${protocol}://${req.headers.host ?? 'localhost'}`)
     const headers = new Headers()
@@ -363,7 +363,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     const apiKey = await authenticateTalocodeApiKey(rawKey)
 
     if (req.method === 'GET' && path === '/v1/skills/health') {
-      const { generateFromProfile } = await import('./services/skills')
+      const { generateFromProfile } = await import('./services/skills.js')
       sendData(res, 200, {
         status: 'ok',
         version: '0.1.0',
@@ -401,7 +401,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
           return
         }
 
-        const { generateFromProfile } = await import('./services/skills')
+        const { generateFromProfile } = await import('./services/skills.js')
         const result = await generateFromProfile({
           username,
           target,
@@ -432,7 +432,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
           return
         }
 
-        const { generateFromRepo } = await import('./services/skills')
+        const { generateFromRepo } = await import('./services/skills.js')
         const result = await generateFromRepo({
           repoUrl,
           target,
@@ -460,7 +460,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
           return
         }
 
-        const { generateFromDocs } = await import('./services/skills')
+        const { generateFromDocs } = await import('./services/skills.js')
         try {
           const result = await generateFromDocs({ url, target, focus: Array.isArray(body.focus) ? body.focus.filter((f: unknown) => typeof f === 'string') : undefined })
           sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'skills.generate.docs' } })
@@ -489,7 +489,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
           return
         }
 
-        const { generateFromText } = await import('./services/skills')
+        const { generateFromText } = await import('./services/skills.js')
         const result = await generateFromText({ name, content, target, focus: Array.isArray(body.focus) ? body.focus.filter((f: unknown) => typeof f === 'string') : undefined })
         sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'skills.generate.text' } })
         return
@@ -512,7 +512,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
           return
         }
 
-        const { exportForCursor } = await import('./services/skills')
+        const { exportForCursor } = await import('./services/skills.js')
         const result = exportForCursor({
           name: skill.name as string,
           title: (skill.title as string) || skill.name as string,
@@ -541,7 +541,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
           return
         }
 
-        const { exportForClaude } = await import('./services/skills')
+        const { exportForClaude } = await import('./services/skills.js')
         const result = exportForClaude({
           name: skill.name as string,
           title: (skill.title as string) || skill.name as string,
@@ -577,7 +577,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       const event = await constructStripeWebhookEvent(rawBody, signature)
 
       if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as Record<string, unknown>
+        const session = event.data.object as unknown as Record<string, unknown>
         const topupResult = await confirmStripeTopup({
           id: session.id as string,
           metadata: (session.metadata || {}) as Record<string, string>,
@@ -1410,7 +1410,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
         const body = await parseBody(req)
         const amountUsd = typeof body.amountUsd === 'number' ? body.amountUsd : Number(body.amountUsd || 0)
         if (!Number.isFinite(amountUsd) || amountUsd <= 0) throw new HttpError(422, 'VALIDATION_ERROR', 'amountUsd must be a positive number.')
-        const result = await createTopupIntent({ projectId: project.id, amountUsd, provider: body.provider })
+        const result = await createTopupIntent({ projectId: project.id, amountUsd, provider: body.provider as string | undefined })
         sendData(res, 201, result)
         return
       }
@@ -1475,7 +1475,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     const body = await parseBody(req)
     const topupId = typeof body.topupId === 'string' ? body.topupId : ''
     if (!topupId) throw new HttpError(422, 'VALIDATION_ERROR', 'topupId is required.')
-    const result = await confirmTopup(topupId, body.providerReference)
+    const result = await confirmTopup(topupId, body.providerReference as string | undefined)
     sendData(res, 200, { topup: toCloudTopupResponse(result.topup), wallet: toCloudWalletResponse(result.wallet) })
     return
   }
@@ -1577,9 +1577,10 @@ async function start() {
   }
 }
 
-const isMainModule = import.meta.url === `file://${process.argv[1]}.ts`
-  || import.meta.url === `file://${process.argv[1]}`
-  || require.main === module
+const isMainModule = process.argv[1] && (
+  process.argv[1].endsWith('/server.ts')
+  || process.argv[1].endsWith('/server')
+)
 
 if (isMainModule) {
   start()

@@ -37,7 +37,7 @@ function parseJsonRpcBody(body: unknown): { request: JsonRpcRequest | null; erro
   const id = obj.id !== undefined ? (typeof obj.id === 'string' || typeof obj.id === 'number' ? obj.id : null) : null
 
   return {
-    request: { jsonrpc: '2.0', method: obj.method, params: obj.params as Record<string, unknown> | undefined, id },
+    request: { jsonrpc: '2.0', method: obj.method, params: obj.params as Record<string, unknown> | undefined, id: id ?? undefined },
     error: null,
   }
 }

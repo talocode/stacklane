@@ -92,7 +92,7 @@ export interface RouterChargeResult {
 
 export function getRouterModelConfig(modelName: string): RouterModelConfig | null {
   if (modelName in TALOCODE_ROUTER_MODELS) {
-    return TALOCODE_ROUTER_MODELS[modelName as TalocodeRouterModel] as RouterModelConfig
+    return TALOCODE_ROUTER_MODELS[modelName as TalocodeRouterModel] as unknown as RouterModelConfig
   }
   return null
 }

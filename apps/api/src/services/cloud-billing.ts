@@ -98,7 +98,7 @@ export async function grantFreeCredits(projectId: string) {
 }
 
 async function dbUpdateFreeCreditsFlag(walletId: string) {
-  const { db } = await import('../db')
+  const { db } = await import('../db.js')
   await db.query(
     `UPDATE cloud_wallets SET free_credits_granted = TRUE WHERE id = $1`,
     [walletId]
