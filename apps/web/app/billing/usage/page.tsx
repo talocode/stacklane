@@ -33,9 +33,12 @@ export default function UsageBillingPage() {
           apiClient.listCloudTransactions(pid, 100).catch(() => [] as CloudTransaction[]),
         ])
       })
-      .then(([evts, txs]) => {
-        setEvents(evts as CloudUsageEvent[])
-        setTransactions(txs as CloudTransaction[])
+      .then((result) => {
+        if (!result) return
+        const evts = result[0] as CloudUsageEvent[]
+        const txs = result[1] as CloudTransaction[]
+        setEvents(evts)
+        setTransactions(txs)
         setLoading(false)
       })
       .catch(() => setLoading(false))
