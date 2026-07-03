@@ -6,7 +6,7 @@ import { apiClient, formatTimestamp } from '@/lib/api-client'
 import type { CloudUsageEvent, CloudTransaction } from '@/lib/api-types'
 import { Zap, Eye, Camera, Globe, FileText, Layers, ArrowUpLeft, ArrowDownLeft } from 'lucide-react'
 
-const actionIcons: Record<string, React.ComponentType<{ size?: number }>> = {
+const actionIcons: Record<string, React.ComponentType<{ size?: number; style?: React.CSSProperties }>> = {
   'agent_browser.check': Zap,
   'agent_browser.screenshot': Camera,
   'agent_browser.session.create': Layers,
