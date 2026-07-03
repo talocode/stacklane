@@ -31,9 +31,10 @@ export default function BillingOverviewPage() {
       })
       .then((result) => {
         if (!result) return
-        const [w, txs] = result
+        const w = result[0] as CloudWallet | null
+        const txs = result[1] as CloudTransaction[]
         if (w) setWallet(w)
-        setTransactions(txs as CloudTransaction[])
+        setTransactions(txs)
         setLoading(false)
       })
       .catch(() => setLoading(false))
