@@ -94,21 +94,128 @@ describe('Talocode SDK', () => {
       assert.strictEqual(typeof c.codra.plan, 'function')
     })
 
-    it('has placeholder namespaces (tradia, signallane, worklane)', () => {
+    it('has placeholder namespaces (tradia, worklane)', () => {
       const c = new Talocode()
       assert.ok(c.tradia)
-      assert.ok(c.signallane)
       assert.ok(c.worklane)
       assert.strictEqual(typeof c.tradia.analyze, 'function')
-      assert.strictEqual(typeof c.signallane.detect, 'function')
       assert.strictEqual(typeof c.worklane.run, 'function')
     })
 
     it('placeholder namespaces throw TalocodeNotImplementedError', async () => {
       const c = new Talocode()
       await assert.rejects(() => c.tradia.analyze(), TalocodeNotImplementedError)
-      await assert.rejects(() => c.signallane.detect(), TalocodeNotImplementedError)
       await assert.rejects(() => c.worklane.run(), TalocodeNotImplementedError)
+    })
+
+    it('has signallane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.signallane)
+      assert.strictEqual(typeof c.signallane.health, 'function')
+      assert.strictEqual(typeof c.signallane.analyze, 'function')
+      assert.strictEqual(typeof c.signallane.contentPlan, 'function')
+      assert.strictEqual(typeof c.signallane.postDrafts, 'function')
+      assert.strictEqual(typeof c.signallane.experiments, 'function')
+      assert.strictEqual(typeof c.signallane.report, 'function')
+    })
+
+    it('signallane.health returns expected shape', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ ok: true, service: 'signallane', version: '0.1.0' }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        const res = await c.signallane.health()
+        assert.ok(capturedUrl.includes('/v1/signallane/health'))
+        assert.strictEqual(res.ok, true)
+        assert.strictEqual(res.service, 'signallane')
+        assert.strictEqual(res.version, '0.1.0')
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('signallane.analyze calls request with correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { analysis: 'test' }, usage: { action: 'signallane.x.analyze', credits: 60, remaining: 940 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.signallane.analyze({ handle: '@test', goal: 'grow', metrics: { followers: 100 } })
+        assert.ok(capturedUrl.includes('/v1/signallane/x/analyze'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('signallane.contentPlan calls request with correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { plan: 'test' }, usage: { action: 'signallane.x.content_plan', credits: 80, remaining: 860 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.signallane.contentPlan({ handle: '@test', goal: 'grow', analysis: {}, week: '2026-W27', cadence: '3x week' })
+        assert.ok(capturedUrl.includes('/v1/signallane/x/content-plan'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('signallane.postDrafts calls request with correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { drafts: [] }, usage: { action: 'signallane.x.post_drafts', credits: 50, remaining: 810 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.signallane.postDrafts({ goal: 'grow', voice: 'professional', topics: ['AI', 'tech'] })
+        assert.ok(capturedUrl.includes('/v1/signallane/x/post-drafts'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('signallane.experiments calls request with correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { experiments: [] }, usage: { action: 'signallane.x.experiments', credits: 70, remaining: 740 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.signallane.experiments({ goal: 'increase engagement' })
+        assert.ok(capturedUrl.includes('/v1/signallane/x/experiments'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('signallane.report calls request with correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { report: 'test' }, usage: { action: 'signallane.x.report', credits: 40, remaining: 700 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.signallane.report({ handle: '@test', goal: 'grow', metrics: {} })
+        assert.ok(capturedUrl.includes('/v1/signallane/x/report'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
     })
 
     it('has skills namespace', () => {

@@ -40,9 +40,11 @@ Each cloud project has a wallet with:
 | cliploop | script.generate | 10 |
 | cliploop | video.render | 150 |
 | cliploop | campaign.package | 300 |
-| signallane | signal.detect | 3 |
-| signallane | lead.score | 5 |
-| signallane | followup.generate | 5 |
+| signallane | signallane.x.analyze | 30 |
+| signallane | signallane.x.content_plan | 40 |
+| signallane | signallane.x.post_drafts | 40 |
+| signallane | signallane.x.experiments | 30 |
+| signallane | signallane.x.report | 60 |
 | tradia | trade.import | 2 |
 | tradia | performance.analyze | 15 |
 | tradia | risk.report | 25 |
