@@ -248,6 +248,60 @@ export const skillsExportCursorSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const invoicelaneExtractSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    text: { type: 'string', description: 'Raw text from an invoice or receipt' },
+    type: { type: 'string', enum: ['invoice', 'receipt', 'document', 'auto'], description: 'Document type hint' },
+    currency: { type: 'string', description: 'Expected currency (e.g. NGN, USD)' },
+    locale: { type: 'string', description: 'Locale for parsing (e.g. en-NG)' },
+    fileUrl: { type: 'string', description: 'URL to a document file (OCR not available in v0.1)' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const invoicelaneExtractReceiptSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    text: { type: 'string', description: 'Raw receipt text' },
+    currency: { type: 'string', description: 'Expected currency' },
+    locale: { type: 'string', description: 'Locale for parsing' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const invoicelaneExtractInvoiceSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    text: { type: 'string', description: 'Raw invoice text' },
+    currency: { type: 'string', description: 'Expected currency' },
+    locale: { type: 'string', description: 'Locale for parsing' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const invoicelaneValidateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    documentType: { type: 'string', description: 'Type of document (invoice, receipt)' },
+    fields: { type: 'object', description: 'Extracted fields to validate', additionalProperties: true },
+  },
+  required: ['documentType', 'fields'],
+  additionalProperties: false,
+}
+
+export const invoicelaneExportCsvSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    rows: { type: 'array', items: { type: 'object' }, description: 'Array of row objects to export as CSV' },
+  },
+  required: ['rows'],
+  additionalProperties: false,
+}
+
 export const signallaneXAnalyzeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

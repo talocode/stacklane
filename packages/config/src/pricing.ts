@@ -26,6 +26,13 @@ export const TALOCODE_CLOUD_PRICING = {
       "campaign.create": 50,
       "campaign.package": 400
     },
+    invoicelane: {
+      "invoicelane.extract": 20,
+      "invoicelane.receipt.extract": 20,
+      "invoicelane.invoice.extract": 30,
+      "invoicelane.validate": 10,
+      "invoicelane.export.csv": 5
+    },
     signallane: {
       "signallane.x.analyze": 30,
       "signallane.x.content_plan": 40,

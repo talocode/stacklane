@@ -108,6 +108,116 @@ describe('Talocode SDK', () => {
       await assert.rejects(() => c.worklane.run(), TalocodeNotImplementedError)
     })
 
+    it('has invoicelane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.invoicelane)
+      assert.strictEqual(typeof c.invoicelane.health, 'function')
+      assert.strictEqual(typeof c.invoicelane.extract, 'function')
+      assert.strictEqual(typeof c.invoicelane.invoiceExtract, 'function')
+      assert.strictEqual(typeof c.invoicelane.receiptExtract, 'function')
+      assert.strictEqual(typeof c.invoicelane.validate, 'function')
+      assert.strictEqual(typeof c.invoicelane.exportCsv, 'function')
+    })
+
+    it('invoicelane.health returns expected shape', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ ok: true, service: 'invoicelane', version: '0.1.0' }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        const res = await c.invoicelane.health()
+        assert.ok(capturedUrl.includes('/v1/invoicelane/health'))
+        assert.strictEqual(res.ok, true)
+        assert.strictEqual(res.service, 'invoicelane')
+        assert.strictEqual(res.version, '0.1.0')
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('invoicelane.extract calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { extracted: {} }, usage: { action: 'invoicelane.extract', credits: 20, remaining: 980 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.invoicelane.extract({ text: 'Invoice #123' })
+        assert.ok(capturedUrl.includes('/v1/invoicelane/extract'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('invoicelane.invoiceExtract calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { invoice: {} }, usage: { action: 'invoicelane.invoice.extract', credits: 30, remaining: 970 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.invoicelane.invoiceExtract({ text: 'Invoice #123', currency: 'USD' })
+        assert.ok(capturedUrl.includes('/v1/invoicelane/invoice/extract'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('invoicelane.receiptExtract calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { receipt: {} }, usage: { action: 'invoicelane.receipt.extract', credits: 20, remaining: 980 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.invoicelane.receiptExtract({ text: 'Receipt from store' })
+        assert.ok(capturedUrl.includes('/v1/invoicelane/receipt/extract'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('invoicelane.validate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { valid: true }, usage: { action: 'invoicelane.validate', credits: 10, remaining: 990 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.invoicelane.validate({ documentType: 'invoice', fields: { amount: '100' } })
+        assert.ok(capturedUrl.includes('/v1/invoicelane/validate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('invoicelane.exportCsv calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { csv: 'col1,col2\nv1,v2' }, usage: { action: 'invoicelane.export.csv', credits: 5, remaining: 995 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.invoicelane.exportCsv({ rows: [{ col1: 'v1', col2: 'v2' }] })
+        assert.ok(capturedUrl.includes('/v1/invoicelane/export/csv'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('has signallane namespace', () => {
       const c = new Talocode()
       assert.ok(c.signallane)

@@ -30,6 +30,11 @@ describe('Talocode MCP v0.1', () => {
         'cliploop_script_generate',
         'cliploop_video_render',
         'cloud_pricing',
+        'invoicelane_export_csv',
+        'invoicelane_extract',
+        'invoicelane_extract_invoice',
+        'invoicelane_extract_receipt',
+        'invoicelane_validate',
         'router_chat',
         'signallane_x_analyze',
         'signallane_x_content_plan',
@@ -346,6 +351,40 @@ describe('Talocode MCP v0.1', () => {
       const tool = TOOL_MAP.get('router_chat')!
       const body = tool.method === 'POST' ? { model: 'test' } : undefined
       assert.deepStrictEqual(body, { model: 'test' })
+    })
+
+    it('invoicelane tools reference correct routes', () => {
+      const extract = TOOL_MAP.get('invoicelane_extract')!
+      assert.strictEqual(extract.route, '/v1/invoicelane/extract')
+      assert.strictEqual(extract.product, 'invoicelane')
+      assert.strictEqual(extract.estimatedCredits, 20)
+
+      const receipt = TOOL_MAP.get('invoicelane_extract_receipt')!
+      assert.strictEqual(receipt.route, '/v1/invoicelane/receipt/extract')
+      assert.strictEqual(receipt.estimatedCredits, 20)
+
+      const invoice = TOOL_MAP.get('invoicelane_extract_invoice')!
+      assert.strictEqual(invoice.route, '/v1/invoicelane/invoice/extract')
+      assert.strictEqual(invoice.estimatedCredits, 30)
+
+      const validate = TOOL_MAP.get('invoicelane_validate')!
+      assert.strictEqual(validate.route, '/v1/invoicelane/validate')
+      assert.strictEqual(validate.estimatedCredits, 10)
+
+      const csv = TOOL_MAP.get('invoicelane_export_csv')!
+      assert.strictEqual(csv.route, '/v1/invoicelane/export/csv')
+      assert.strictEqual(csv.estimatedCredits, 5)
+    })
+
+    it('invoicelane_validate requires documentType and fields', () => {
+      const tool = TOOL_MAP.get('invoicelane_validate')!
+      assert.ok(tool.inputSchema.required?.includes('documentType'))
+      assert.ok(tool.inputSchema.required?.includes('fields'))
+    })
+
+    it('invoicelane_export_csv requires rows', () => {
+      const tool = TOOL_MAP.get('invoicelane_export_csv')!
+      assert.ok(tool.inputSchema.required?.includes('rows'))
     })
 
     it('skills tools reference correct routes', () => {

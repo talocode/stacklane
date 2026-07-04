@@ -4,6 +4,7 @@ import { AgentBrowserClient } from './agent-browser'
 import { ClipLoopClient } from './cliploop'
 import { CodraClient } from './codra'
 import { SkillsClient } from './skills'
+import { InvoiceLaneClient } from './invoicelane'
 import { SignalLaneClient } from './signallane'
 import { request } from './request'
 import {
@@ -28,6 +29,7 @@ export class TalocodeApiClient {
   public cliploop: ClipLoopClient
   public codra: CodraClient
   public skills: SkillsClient
+  public invoicelane: InvoiceLaneClient
   public tradia: TradiaClientPlaceholder
   public worklane: WorkLaneClientPlaceholder
   public baseUrl: string
@@ -51,6 +53,7 @@ export class TalocodeApiClient {
     this.cliploop = new ClipLoopClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.codra = new CodraClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.skills = new SkillsClient(this.baseUrl, this.apiKey, this.timeoutMs)
+    this.invoicelane = new InvoiceLaneClient(this)
     this.tradia = new TradiaClientPlaceholder()
     this.worklane = new WorkLaneClientPlaceholder()
   }
