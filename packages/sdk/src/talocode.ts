@@ -4,9 +4,10 @@ import { AgentBrowserClient } from './agent-browser'
 import { ClipLoopClient } from './cliploop'
 import { CodraClient } from './codra'
 import { SkillsClient } from './skills'
+import { SignalLaneClient } from './signallane'
+import { request } from './request'
 import {
   TradiaClientPlaceholder,
-  SignalLaneClientPlaceholder,
   WorkLaneClientPlaceholder,
 } from './placeholders'
 
@@ -20,7 +21,7 @@ export interface TalocodeOptions {
 const DEFAULT_BASE_URL = 'https://api.talocode.site'
 const DEFAULT_TIMEOUT_MS = 30000
 
-export class Talocode {
+export class TalocodeApiClient {
   public tera: TeraClient
   public router: RouterClient
   public agentBrowser: AgentBrowserClient
@@ -28,11 +29,11 @@ export class Talocode {
   public codra: CodraClient
   public skills: SkillsClient
   public tradia: TradiaClientPlaceholder
-  public signallane: SignalLaneClientPlaceholder
   public worklane: WorkLaneClientPlaceholder
   public baseUrl: string
   public apiKey: string | undefined
   public timeoutMs: number
+  private _signallane?: SignalLaneClient
 
   constructor(options: TalocodeOptions = {}) {
     this.apiKey =
@@ -51,7 +52,22 @@ export class Talocode {
     this.codra = new CodraClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.skills = new SkillsClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.tradia = new TradiaClientPlaceholder()
-    this.signallane = new SignalLaneClientPlaceholder()
     this.worklane = new WorkLaneClientPlaceholder()
   }
+
+  get signallane(): SignalLaneClient {
+    if (!this._signallane) {
+      this._signallane = new SignalLaneClient(this)
+    }
+    return this._signallane
+  }
+
+  async request(path: string, options: { method?: string; body?: unknown; headers?: Record<string, string>; timeoutMs?: number } = {}): Promise<unknown> {
+    return request(this.baseUrl, path, this.apiKey, {
+      ...options,
+      timeoutMs: options.timeoutMs ?? this.timeoutMs,
+    })
+  }
 }
+
+export { TalocodeApiClient as Talocode }

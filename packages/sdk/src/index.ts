@@ -161,10 +161,10 @@ export { AgentBrowserClient } from './agent-browser'
 export { ClipLoopClient } from './cliploop'
 export { CodraClient } from './codra'
 export { SkillsClient } from './skills'
+export { SignalLaneClient } from './signallane.js'
 export {
   CodraClientPlaceholder,
   TradiaClientPlaceholder,
-  SignalLaneClientPlaceholder,
   WorkLaneClientPlaceholder,
 } from './placeholders'
 export {

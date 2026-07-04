@@ -27,9 +27,11 @@ export const TALOCODE_CLOUD_PRICING = {
       "campaign.package": 400
     },
     signallane: {
-      "signal.detect": 5,
-      "lead.score": 8,
-      "followup.generate": 8
+      "signallane.x.analyze": 30,
+      "signallane.x.content_plan": 40,
+      "signallane.x.post_drafts": 40,
+      "signallane.x.experiments": 30,
+      "signallane.x.report": 60
     },
     tradia: {
       "trade.import": 3,

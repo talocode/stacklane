@@ -248,6 +248,62 @@ export const skillsExportCursorSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const signallaneXAnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    handle: { type: 'string', description: 'X (Twitter) handle to analyze (without @)' },
+    period: { type: 'string', enum: ['7d', '14d', '30d', '90d'], description: 'Analysis period' },
+  },
+  required: ['handle'],
+  additionalProperties: false,
+}
+
+export const signallaneXContentPlanSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    handle: { type: 'string', description: 'X (Twitter) handle (without @)' },
+    goals: { type: 'array', items: { type: 'string' }, description: 'Content goals (e.g. engagement, followers, authority)' },
+    topics: { type: 'array', items: { type: 'string' }, description: 'Preferred topics to cover' },
+    tone: { type: 'string', description: 'Content tone (e.g. professional, casual, witty)' },
+  },
+  required: ['handle'],
+  additionalProperties: false,
+}
+
+export const signallaneXPostDraftsSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    handle: { type: 'string', description: 'X (Twitter) handle (without @)' },
+    topic: { type: 'string', description: 'Topic for the post drafts' },
+    tone: { type: 'string', description: 'Desired tone (e.g. informative, humorous, provocative)' },
+    count: { type: 'number', description: 'Number of drafts to generate (default 5)' },
+  },
+  required: ['handle'],
+  additionalProperties: false,
+}
+
+export const signallaneXExperimentsSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    handle: { type: 'string', description: 'X (Twitter) handle (without @)' },
+    goal: { type: 'string', description: 'Experiment goal (e.g. increase engagement, grow followers)' },
+    focus: { type: 'array', items: { type: 'string' }, description: 'Focus areas for experiments' },
+  },
+  required: ['handle'],
+  additionalProperties: false,
+}
+
+export const signallaneXReportSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    handle: { type: 'string', description: 'X (Twitter) handle (without @)' },
+    period: { type: 'string', enum: ['7d', '14d', '30d', '90d'], description: 'Report period' },
+    include: { type: 'array', items: { type: 'string' }, description: 'Sections to include (metrics, content, competitors, recommendations)' },
+  },
+  required: ['handle'],
+  additionalProperties: false,
+}
+
 export const skillsExportClaudeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

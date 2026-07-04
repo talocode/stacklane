@@ -12,12 +12,6 @@ export class TradiaClientPlaceholder {
   }
 }
 
-export class SignalLaneClientPlaceholder {
-  async detect(): Promise<never> {
-    throw new TalocodeNotImplementedError('signallane', 'detect')
-  }
-}
-
 export class WorkLaneClientPlaceholder {
   async run(): Promise<never> {
     throw new TalocodeNotImplementedError('worklane', 'run')

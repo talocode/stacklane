@@ -25,9 +25,11 @@
 | cliploop | script.generate | 10 | $0.10 |
 | cliploop | video.render | 150 | $1.50 |
 | cliploop | campaign.package | 300 | $3.00 |
-| signallane | signal.detect | 3 | $0.03 |
-| signallane | lead.score | 5 | $0.05 |
-| signallane | followup.generate | 5 | $0.05 |
+| signallane | signallane.x.analyze | 30 | $0.30 |
+| signallane | signallane.x.content_plan | 40 | $0.40 |
+| signallane | signallane.x.post_drafts | 40 | $0.40 |
+| signallane | signallane.x.experiments | 30 | $0.30 |
+| signallane | signallane.x.report | 60 | $0.60 |
 | tradia | trade.import | 2 | $0.02 |
 | tradia | performance.analyze | 15 | $0.15 |
 | tradia | risk.report | 25 | $0.25 |

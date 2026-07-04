@@ -31,6 +31,11 @@ describe('Talocode MCP v0.1', () => {
         'cliploop_video_render',
         'cloud_pricing',
         'router_chat',
+        'signallane_x_analyze',
+        'signallane_x_content_plan',
+        'signallane_x_experiments',
+        'signallane_x_post_drafts',
+        'signallane_x_report',
         'skills_export_claude',
         'skills_export_cursor',
         'skills_generate_docs',
@@ -379,6 +384,36 @@ describe('Talocode MCP v0.1', () => {
       const tool = TOOL_MAP.get('skills_generate_text')!
       assert.ok(tool.inputSchema.required?.includes('name'))
       assert.ok(tool.inputSchema.required?.includes('content'))
+    })
+
+    it('signallane tools reference correct routes', () => {
+      const analyze = TOOL_MAP.get('signallane_x_analyze')!
+      assert.strictEqual(analyze.route, '/v1/signallane/x/analyze')
+      assert.strictEqual(analyze.product, 'signallane')
+      assert.strictEqual(analyze.estimatedCredits, 30)
+
+      const plan = TOOL_MAP.get('signallane_x_content_plan')!
+      assert.strictEqual(plan.route, '/v1/signallane/x/content-plan')
+      assert.strictEqual(plan.estimatedCredits, 40)
+
+      const drafts = TOOL_MAP.get('signallane_x_post_drafts')!
+      assert.strictEqual(drafts.route, '/v1/signallane/x/post-drafts')
+      assert.strictEqual(drafts.estimatedCredits, 40)
+
+      const experiments = TOOL_MAP.get('signallane_x_experiments')!
+      assert.strictEqual(experiments.route, '/v1/signallane/x/experiments')
+      assert.strictEqual(experiments.estimatedCredits, 30)
+
+      const report = TOOL_MAP.get('signallane_x_report')!
+      assert.strictEqual(report.route, '/v1/signallane/x/report')
+      assert.strictEqual(report.estimatedCredits, 60)
+    })
+
+    it('signallane tools require handle', () => {
+      for (const name of ['signallane_x_analyze', 'signallane_x_content_plan', 'signallane_x_post_drafts', 'signallane_x_experiments', 'signallane_x_report']) {
+        const tool = TOOL_MAP.get(name)!
+        assert.ok(tool.inputSchema.required?.includes('handle'), `${name} requires handle`)
+      }
     })
   })
 })
