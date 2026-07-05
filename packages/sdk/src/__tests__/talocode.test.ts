@@ -363,6 +363,221 @@ describe('Talocode SDK', () => {
       }
     })
 
+    it('has ugclane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.ugclane)
+      assert.strictEqual(typeof c.ugclane.health, 'function')
+      assert.strictEqual(typeof c.ugclane.strategy.generate, 'function')
+      assert.strictEqual(typeof c.ugclane.competitor.analyze, 'function')
+      assert.strictEqual(typeof c.ugclane.hooks.generate, 'function')
+      assert.strictEqual(typeof c.ugclane.scripts.generate, 'function')
+      assert.strictEqual(typeof c.ugclane.accounts.plan, 'function')
+      assert.strictEqual(typeof c.ugclane.calendar.generate, 'function')
+      assert.strictEqual(typeof c.ugclane.experiments.generate, 'function')
+      assert.strictEqual(typeof c.ugclane.report.generate, 'function')
+      assert.strictEqual(typeof c.ugclane.export.markdown, 'function')
+      assert.strictEqual(typeof c.ugclane.export.json, 'function')
+    })
+
+    it('ugclane.health returns expected shape', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ ok: true, service: 'ugclane', version: '0.1.0', timestamp: new Date().toISOString() }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        const res = await c.ugclane.health()
+        assert.ok(capturedUrl.includes('/v1/ugclane/health'))
+        assert.strictEqual(res.ok, true)
+        assert.strictEqual(res.service, 'ugclane')
+        assert.strictEqual(res.version, '0.1.0')
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.strategy.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { strategy: {} }, usage: { action: 'ugclane.strategy.generate', credits: 30, remaining: 970 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.strategy.generate({ goal: 'grow' })
+        assert.ok(capturedUrl.includes('/v1/ugclane/strategy/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.competitor.analyze calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { analysis: [] }, usage: { action: 'ugclane.competitor.analyze', credits: 40, remaining: 960 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.competitor.analyze({ competitors: ['@competitor'] })
+        assert.ok(capturedUrl.includes('/v1/ugclane/competitor/analyze'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.hooks.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { hooks: [] }, usage: { action: 'ugclane.hooks.generate', credits: 20, remaining: 980 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.hooks.generate({ topic: 'AI trends' })
+        assert.ok(capturedUrl.includes('/v1/ugclane/hooks/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.scripts.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { script: '' }, usage: { action: 'ugclane.scripts.generate', credits: 40, remaining: 960 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.scripts.generate({ topic: 'How to code' })
+        assert.ok(capturedUrl.includes('/v1/ugclane/scripts/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.accounts.plan calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { plan: {} }, usage: { action: 'ugclane.accounts.plan', credits: 30, remaining: 970 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.accounts.plan({ platform: 'youtube', goal: 'grow' })
+        assert.ok(capturedUrl.includes('/v1/ugclane/accounts/plan'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.calendar.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { calendar: [] }, usage: { action: 'ugclane.calendar.generate', credits: 60, remaining: 940 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.calendar.generate({ platform: 'tiktok' })
+        assert.ok(capturedUrl.includes('/v1/ugclane/calendar/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.experiments.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { experiments: [] }, usage: { action: 'ugclane.experiments.generate', credits: 30, remaining: 970 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.experiments.generate({ platform: 'instagram', goal: 'increase engagement' })
+        assert.ok(capturedUrl.includes('/v1/ugclane/experiments/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.report.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { report: {} }, usage: { action: 'ugclane.report.generate', credits: 40, remaining: 960 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.report.generate({ platform: 'youtube', period: '30d', metrics: { views: 1000 } })
+        assert.ok(capturedUrl.includes('/v1/ugclane/report/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.export.markdown calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { markdown: '# Report' }, usage: { action: 'ugclane.export.markdown', credits: 5, remaining: 995 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.export.markdown({ content: { report: 'data' } })
+        assert.ok(capturedUrl.includes('/v1/ugclane/export/markdown'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane.export.json calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { json: {} }, usage: { action: 'ugclane.export.json', credits: 5, remaining: 995 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.ugclane.export.json({ content: { data: 'test' } })
+        assert.ok(capturedUrl.includes('/v1/ugclane/export/json'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('ugclane 402 maps to insufficient credits', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ error: { code: 'insufficient_credits', message: 'Insufficient credits', required: 30, available: 10 } }), { status: 402, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'low-balance' })
+        await c.ugclane.strategy.generate({ goal: 'grow' })
+        assert.fail('Should have thrown')
+      } catch (err) {
+        assert.ok(capturedUrl.includes('/v1/ugclane/strategy/generate'))
+        assert.ok(err instanceof TalocodeInsufficientCreditsError)
+        assert.strictEqual((err as TalocodeInsufficientCreditsError).status, 402)
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('has signallane namespace', () => {
       const c = new Talocode()
       assert.ok(c.signallane)

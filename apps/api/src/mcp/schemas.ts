@@ -453,6 +453,124 @@ export const signallaneXReportSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const ugclaneStrategyGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    goal: { type: 'string', description: 'Content strategy goal (e.g. grow, engage, convert)' },
+    niche: { type: 'string', description: 'Target niche or industry' },
+    platform: { type: 'string', description: 'Target platform (youtube, tiktok, instagram, twitter, linkedin)' },
+    constraints: { type: 'array', items: { type: 'string' }, description: 'Constraints to follow' },
+  },
+  required: ['goal'],
+  additionalProperties: false,
+}
+
+export const ugclaneCompetitorAnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    competitors: { type: 'array', items: { type: 'string' }, description: 'List of competitor identifiers (handles, channel names)' },
+    niche: { type: 'string', description: 'Target niche' },
+    depth: { type: 'string', enum: ['basic', 'detailed', 'deep'], description: 'Analysis depth' },
+  },
+  required: ['competitors'],
+  additionalProperties: false,
+}
+
+export const ugclaneHooksGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    topic: { type: 'string', description: 'Content topic for hook generation' },
+    platform: { type: 'string', description: 'Target platform' },
+    count: { type: 'number', description: 'Number of hooks to generate (default 5)' },
+    tone: { type: 'string', description: 'Desired tone' },
+  },
+  required: ['topic'],
+  additionalProperties: false,
+}
+
+export const ugclaneScriptsGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    topic: { type: 'string', description: 'Script topic' },
+    format: { type: 'string', enum: ['short', 'long', 'series'], description: 'Script format' },
+    platform: { type: 'string', description: 'Target platform' },
+    tone: { type: 'string', description: 'Desired tone' },
+    cta: { type: 'string', description: 'Call to action' },
+  },
+  required: ['topic'],
+  additionalProperties: false,
+}
+
+export const ugclaneAccountsPlanSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    platform: { type: 'string', description: 'Social platform' },
+    goal: { type: 'string', description: 'Account goal' },
+    metrics: { type: 'object', description: 'Current account metrics', additionalProperties: true },
+    timeline: { type: 'string', description: 'Growth timeline (e.g. 30d, 90d)' },
+  },
+  required: ['platform', 'goal'],
+  additionalProperties: false,
+}
+
+export const ugclaneCalendarGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    platform: { type: 'string', description: 'Target platform' },
+    month: { type: 'string', description: 'Month for the calendar (YYYY-MM)' },
+    goals: { type: 'array', items: { type: 'string' }, description: 'Content goals for the month' },
+    themes: { type: 'array', items: { type: 'string' }, description: 'Content themes' },
+    postFrequency: { type: 'string', description: 'Posting frequency (e.g. 3x week, daily)' },
+  },
+  required: ['platform'],
+  additionalProperties: false,
+}
+
+export const ugclaneExperimentsGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    platform: { type: 'string', description: 'Target platform' },
+    goal: { type: 'string', description: 'Experiment goal' },
+    variables: { type: 'array', items: { type: 'string' }, description: 'Variables to test' },
+    durationDays: { type: 'number', description: 'Experiment duration in days' },
+  },
+  required: ['platform', 'goal'],
+  additionalProperties: false,
+}
+
+export const ugclaneReportGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    platform: { type: 'string', description: 'Target platform' },
+    period: { type: 'string', description: 'Report period (e.g. 7d, 30d, 90d)' },
+    metrics: { type: 'object', description: 'Metrics data for the report', additionalProperties: true },
+    goal: { type: 'string', description: 'Content goal' },
+  },
+  required: ['platform', 'period', 'metrics'],
+  additionalProperties: false,
+}
+
+export const ugclaneExportMarkdownSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    content: { type: 'object', description: 'Content data to export', additionalProperties: true },
+    title: { type: 'string', description: 'Document title' },
+    sections: { type: 'array', items: { type: 'string' }, description: 'Sections to include' },
+  },
+  required: ['content'],
+  additionalProperties: false,
+}
+
+export const ugclaneExportJsonSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    content: { type: 'object', description: 'Content data to export', additionalProperties: true },
+    format: { type: 'string', enum: ['pretty', 'compact'], description: 'JSON output format' },
+  },
+  required: ['content'],
+  additionalProperties: false,
+}
+
 export const skillsExportClaudeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

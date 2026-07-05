@@ -82,6 +82,18 @@ export const TALOCODE_CLOUD_PRICING = {
       "generate.text": 40,
       "export.cursor": 10,
       "export.claude": 10
+    },
+    ugclane: {
+      "ugclane.strategy.generate": 30,
+      "ugclane.competitor.analyze": 40,
+      "ugclane.hooks.generate": 20,
+      "ugclane.scripts.generate": 40,
+      "ugclane.accounts.plan": 30,
+      "ugclane.calendar.generate": 60,
+      "ugclane.experiments.generate": 30,
+      "ugclane.report.generate": 40,
+      "ugclane.export.markdown": 5,
+      "ugclane.export.json": 5
     }
   }
 } as const

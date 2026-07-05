@@ -164,6 +164,7 @@ export { InvoiceLaneClient } from './invoicelane.js'
 export { WebDataLaneClient } from './webdatalane.js'
 export { SkillsClient } from './skills'
 export { SignalLaneClient } from './signallane.js'
+export { UGCLaneClient } from './ugclane.js'
 export {
   CodraClientPlaceholder,
   TradiaClientPlaceholder,

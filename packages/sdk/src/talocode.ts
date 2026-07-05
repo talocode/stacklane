@@ -7,6 +7,7 @@ import { SkillsClient } from './skills'
 import { InvoiceLaneClient } from './invoicelane'
 import { WebDataLaneClient } from './webdatalane'
 import { SignalLaneClient } from './signallane'
+import { UGCLaneClient } from './ugclane'
 import { request } from './request'
 import {
   TradiaClientPlaceholder,
@@ -32,6 +33,7 @@ export class TalocodeApiClient {
   public skills: SkillsClient
   public invoicelane: InvoiceLaneClient
   public webdatalane: WebDataLaneClient
+  public ugclane: UGCLaneClient
   public tradia: TradiaClientPlaceholder
   public worklane: WorkLaneClientPlaceholder
   public baseUrl: string
@@ -57,6 +59,7 @@ export class TalocodeApiClient {
     this.skills = new SkillsClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.invoicelane = new InvoiceLaneClient(this)
     this.webdatalane = new WebDataLaneClient(this)
+    this.ugclane = new UGCLaneClient(this)
     this.tradia = new TradiaClientPlaceholder()
     this.worklane = new WorkLaneClientPlaceholder()
   }
