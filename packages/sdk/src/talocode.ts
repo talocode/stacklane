@@ -8,6 +8,7 @@ import { InvoiceLaneClient } from './invoicelane'
 import { WebDataLaneClient } from './webdatalane'
 import { SignalLaneClient } from './signallane'
 import { UGCLaneClient } from './ugclane'
+import { CrawlerLaneClient } from './crawlerlane'
 import { request } from './request'
 import {
   TradiaClientPlaceholder,
@@ -34,6 +35,7 @@ export class TalocodeApiClient {
   public invoicelane: InvoiceLaneClient
   public webdatalane: WebDataLaneClient
   public ugclane: UGCLaneClient
+  public crawlerlane: CrawlerLaneClient
   public tradia: TradiaClientPlaceholder
   public worklane: WorkLaneClientPlaceholder
   public baseUrl: string
@@ -60,6 +62,7 @@ export class TalocodeApiClient {
     this.invoicelane = new InvoiceLaneClient(this)
     this.webdatalane = new WebDataLaneClient(this)
     this.ugclane = new UGCLaneClient(this)
+    this.crawlerlane = new CrawlerLaneClient(this)
     this.tradia = new TradiaClientPlaceholder()
     this.worklane = new WorkLaneClientPlaceholder()
   }

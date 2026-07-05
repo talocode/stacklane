@@ -397,6 +397,147 @@ export const webdatalaneScreenshotSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+const crawlerlaneLogEventSchema = {
+  type: 'object',
+  properties: {
+    timestamp: { type: 'string', description: 'ISO timestamp' },
+    method: { type: 'string', description: 'HTTP method' },
+    path: { type: 'string', description: 'Request path' },
+    status: { type: 'number', description: 'HTTP status code' },
+    userAgent: { type: 'string', description: 'User-Agent header' },
+    referer: { type: 'string', description: 'Referer header' },
+    ip: { type: 'string', description: 'Redacted or hashed IP (never submit raw IPs)' },
+    host: { type: 'string', description: 'Hostname' },
+  },
+  required: ['timestamp', 'method', 'path', 'status', 'userAgent'],
+}
+
+const crawlerlanePrivacySchema = {
+  type: 'object',
+  properties: {
+    redactIps: { type: 'boolean', description: 'Redact/hash IP addresses in logs (default true)' },
+  },
+}
+
+export const crawlerlaneLogsIngestSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    domain: { type: 'string', description: 'Domain you own (e.g. talocode.site)' },
+    logs: {
+      type: 'array',
+      items: crawlerlaneLogEventSchema,
+      description: 'Request logs from your website. Logs may contain sensitive data — redact IPs before sending.',
+    },
+    privacy: crawlerlanePrivacySchema,
+  },
+  required: ['domain', 'logs'],
+  additionalProperties: false,
+}
+
+export const crawlerlaneBotsClassifySchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    userAgent: { type: 'string', description: 'User-Agent string to classify (heuristic only)' },
+    ip: { type: 'string', description: 'Optional redacted IP' },
+    path: { type: 'string', description: 'Request path' },
+    status: { type: 'number', description: 'HTTP status' },
+  },
+  required: ['userAgent'],
+  additionalProperties: false,
+}
+
+export const crawlerlanePagesAnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    domain: { type: 'string', description: 'Domain you own' },
+    logs: { type: 'array', items: crawlerlaneLogEventSchema, description: 'Access logs (IPs should be redacted)' },
+    importantPages: { type: 'array', items: { type: 'string' }, description: 'Important pages to check crawl coverage' },
+    privacy: crawlerlanePrivacySchema,
+  },
+  required: ['domain', 'logs'],
+  additionalProperties: false,
+}
+
+export const crawlerlane404AnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    domain: { type: 'string', description: 'Domain you own' },
+    logs: { type: 'array', items: crawlerlaneLogEventSchema, description: 'Access logs (IPs should be redacted)' },
+    privacy: crawlerlanePrivacySchema,
+  },
+  required: ['domain', 'logs'],
+  additionalProperties: false,
+}
+
+export const crawlerlaneAiVisibilityScoreSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    domain: { type: 'string', description: 'Domain you own' },
+    logs: { type: 'array', items: crawlerlaneLogEventSchema, description: 'Access logs (IPs should be redacted)' },
+    importantPages: { type: 'array', items: { type: 'string' } },
+    hasLlmsTxt: { type: 'boolean' },
+    hasSitemap: { type: 'boolean' },
+    hasRobotsTxt: { type: 'boolean' },
+    privacy: crawlerlanePrivacySchema,
+  },
+  required: ['domain', 'logs'],
+  additionalProperties: false,
+}
+
+export const crawlerlaneReportGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    domain: { type: 'string', description: 'Domain you own' },
+    logs: { type: 'array', items: crawlerlaneLogEventSchema, description: 'Access logs (IPs should be redacted)' },
+    period: { type: 'string', description: 'Report period (e.g. 7d)' },
+    importantPages: { type: 'array', items: { type: 'string' } },
+    privacy: crawlerlanePrivacySchema,
+  },
+  required: ['domain', 'logs'],
+  additionalProperties: false,
+}
+
+export const crawlerlaneSitemapSuggestSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    domain: { type: 'string', description: 'Domain you own' },
+    existingPages: { type: 'array', items: { type: 'string' } },
+    requested404s: { type: 'array', items: { type: 'string' } },
+    importantPages: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['domain'],
+  additionalProperties: false,
+}
+
+export const crawlerlaneRobotsAuditSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    domain: { type: 'string', description: 'Domain you own' },
+    robotsTxt: { type: 'string', description: 'robots.txt content' },
+    sitemapUrl: { type: 'string', description: 'Sitemap URL' },
+  },
+  required: ['domain', 'robotsTxt'],
+  additionalProperties: false,
+}
+
+export const crawlerlaneExportMarkdownSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    report: { type: 'object', description: 'CrawlerLane report object' },
+  },
+  required: ['report'],
+  additionalProperties: false,
+}
+
+export const crawlerlaneExportJsonSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    report: { type: 'object', description: 'CrawlerLane report object' },
+  },
+  required: ['report'],
+  additionalProperties: false,
+}
+
 export const signallaneXAnalyzeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

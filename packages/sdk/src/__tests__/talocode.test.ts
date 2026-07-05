@@ -578,6 +578,54 @@ describe('Talocode SDK', () => {
       }
     })
 
+    it('has crawlerlane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.crawlerlane)
+      assert.strictEqual(typeof c.crawlerlane.health, 'function')
+      assert.strictEqual(typeof c.crawlerlane.logs.ingest, 'function')
+      assert.strictEqual(typeof c.crawlerlane.bots.classify, 'function')
+      assert.strictEqual(typeof c.crawlerlane.pages.analyze, 'function')
+      assert.strictEqual(typeof c.crawlerlane.notFound.analyze, 'function')
+      assert.strictEqual(typeof c.crawlerlane.aiVisibility.score, 'function')
+      assert.strictEqual(typeof c.crawlerlane.report.generate, 'function')
+      assert.strictEqual(typeof c.crawlerlane.sitemap.suggest, 'function')
+      assert.strictEqual(typeof c.crawlerlane.robots.audit, 'function')
+      assert.strictEqual(typeof c.crawlerlane.export.markdown, 'function')
+      assert.strictEqual(typeof c.crawlerlane.export.json, 'function')
+    })
+
+    it('crawlerlane.bots.classify calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ result: { bot: true }, usage: { action: 'crawlerlane.bots.classify', credits: 2 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.crawlerlane.bots.classify({ userAgent: 'ChatGPT-User' })
+        assert.ok(capturedUrl.includes('/v1/crawlerlane/bots/classify'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('crawlerlane.report.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ result: { summary: 'ok' }, usage: { action: 'crawlerlane.report.generate', credits: 40 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.crawlerlane.report.generate({ domain: 'talocode.site', logs: [] })
+        assert.ok(capturedUrl.includes('/v1/crawlerlane/report/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('has signallane namespace', () => {
       const c = new Talocode()
       assert.ok(c.signallane)

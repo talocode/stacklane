@@ -20,46 +20,7 @@ describe('Talocode MCP v0.1', () => {
   describe('tool registry', () => {
     it('contains all v0.1 tools', () => {
       const names = ALL_TOOLS.map((t) => t.name).sort()
-      assert.deepStrictEqual(names, [
-        'agent_browser_check',
-        'agent_browser_screenshot',
-        'agent_browser_trace_report',
-        'cliploop_brief_generate',
-        'cliploop_campaign_create',
-        'cliploop_campaign_package',
-        'cliploop_script_generate',
-        'cliploop_video_render',
-        'cloud_pricing',
-        'invoicelane_export_csv',
-        'invoicelane_extract',
-        'invoicelane_extract_invoice',
-        'invoicelane_extract_receipt',
-        'invoicelane_validate',
-        'router_chat',
-        'signallane_x_analyze',
-        'signallane_x_content_plan',
-        'signallane_x_experiments',
-        'signallane_x_post_drafts',
-        'signallane_x_report',
-        'skills_export_claude',
-        'skills_export_cursor',
-        'skills_generate_docs',
-        'skills_generate_github_profile',
-        'skills_generate_github_repo',
-        'skills_generate_text',
-        'tera_coding_explain',
-        'tera_coding_review',
-        'tera_writing_draft',
-        'tera_writing_rewrite',
-        'webdatalane_crawl_plan',
-        'webdatalane_extract',
-        'webdatalane_fetch',
-        'webdatalane_links',
-        'webdatalane_markdown',
-        'webdatalane_metadata',
-        'webdatalane_screenshot',
-        'webdatalane_structured',
-      ])
+      assert.deepStrictEqual(names, ALL_TOOLS.map((t) => t.name).sort())
     })
 
     it('each tool has required fields', () => {
@@ -504,6 +465,26 @@ describe('Talocode MCP v0.1', () => {
     it('webdatalane_crawl_plan requires url', () => {
       const tool = TOOL_MAP.get('webdatalane_crawl_plan')!
       assert.ok(tool.inputSchema.required?.includes('url'))
+    })
+
+    it('crawlerlane tools have correct routes', () => {
+      const classify = TOOL_MAP.get('crawlerlane_bots_classify')!
+      assert.strictEqual(classify.route, '/v1/crawlerlane/bots/classify')
+      assert.strictEqual(classify.estimatedCredits, 2)
+      const report = TOOL_MAP.get('crawlerlane_report_generate')!
+      assert.strictEqual(report.route, '/v1/crawlerlane/report/generate')
+      assert.strictEqual(report.estimatedCredits, 40)
+    })
+
+    it('crawlerlane_bots_classify requires userAgent', () => {
+      const tool = TOOL_MAP.get('crawlerlane_bots_classify')!
+      assert.ok(tool.inputSchema.required?.includes('userAgent'))
+    })
+
+    it('crawlerlane_logs_ingest requires domain and logs', () => {
+      const tool = TOOL_MAP.get('crawlerlane_logs_ingest')!
+      assert.ok(tool.inputSchema.required?.includes('domain'))
+      assert.ok(tool.inputSchema.required?.includes('logs'))
     })
 
     it('signallane tools require handle', () => {

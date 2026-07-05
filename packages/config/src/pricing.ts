@@ -83,6 +83,18 @@ export const TALOCODE_CLOUD_PRICING = {
       "export.cursor": 10,
       "export.claude": 10
     },
+    crawlerlane: {
+      "crawlerlane.logs.ingest": 5,
+      "crawlerlane.bots.classify": 2,
+      "crawlerlane.pages.analyze": 20,
+      "crawlerlane.404.analyze": 20,
+      "crawlerlane.ai_visibility.score": 30,
+      "crawlerlane.report.generate": 40,
+      "crawlerlane.sitemap.suggest": 20,
+      "crawlerlane.robots.audit": 15,
+      "crawlerlane.export.markdown": 5,
+      "crawlerlane.export.json": 5,
+    },
     ugclane: {
       "ugclane.strategy.generate": 30,
       "ugclane.competitor.analyze": 40,
