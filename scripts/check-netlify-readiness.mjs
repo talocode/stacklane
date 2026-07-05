@@ -111,7 +111,7 @@ async function run() {
   const serverPath = resolve(root, 'apps/api/src/server.ts')
   if (existsSync(serverPath)) {
     const serverContent = readFileSync(serverPath, 'utf-8')
-    const healthEndpoints = ['/health', '/api/v1/cloud/health', '/v1/skills/health']
+    const healthEndpoints = ['/health', '/api/v1/cloud/health', '/v1/skills/health', '/v1/agent-browser/health']
     for (const ep of healthEndpoints) {
       if (serverContent.includes(`path === '${ep}'`) || serverContent.includes(`path === \"${ep}\"`)) {
         pass(`Health endpoint ${ep} exists`)

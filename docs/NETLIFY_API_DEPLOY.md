@@ -1,244 +1,154 @@
-# Netlify Deployment Guide — Stacklane API
+# Netlify Deployment Guide — Talocode API (Stacklane)
 
-## Deployment Shape Assessment
+Primary deployment target for **https://api.talocode.site**.
 
-### Recommendation: NOT suitable for Netlify Functions (primary)
+## Service Overview
 
-**Stacklane API is a long-running Node HTTP server with database connections, not a stateless serverless function.** Key incompatibilities:
+| Property | Value |
+|----------|-------|
+| Site name | `talocode-cloud-api` |
+| Domain | `api.talocode.site` |
+| Repo | `github.com/talocode/Stacklane` |
+| Functions | `netlify/functions/api.mjs` (catch-all) |
+| Health check | `GET /api/v1/cloud/health` |
 
-| Factor | Stacklane API | Netlify Functions Requirement | Impact |
-|--------|---------------|-------------------------------|--------|
-| Runtime | Persistent Node process (via `tsx`) | Stateless, cold-start per request | High latency, connection churn |
-| Database | Persistent PostgreSQL connection pool | No persistent connections | Need external DB pooler |
-| Timeout | Unlimited (listening server) | 10s (26s on Pro) | Long requests fail |
-| State | In-memory cache, provisioning worker | No persistent state | Worker cannot run |
-| Build | TypeScript via `tsx` at runtime | Pre-compiled JS required | Build config mismatch |
+## Architecture
 
-### Recommended: Deploy API on persistent Node hosting
+Stacklane API runs as a **Netlify Function** with a catch-all redirect:
 
-| Platform | Strengths | Cost | Notes |
-|----------|-----------|------|-------|
-| **Railway** | Native Node, Postgres add-on, GitHub deploy | Free tier → $5/mo | Best fit for monorepo, pnpm support |
-| **Render** | Web Services, cron jobs, Postgres | Free tier → $7/mo | Good for long-running processes |
-| **Fly.io** | Edge-close, Postgres, global regions | Pay-as-you-go | More complex setup |
-| **Railway is recommended** for Stacklane API. | | | |
+```
+/*  →  /.netlify/functions/api
+```
 
-### Alternative: Netlify Functions with adapter (if needed)
+The function loads the compiled API handler from `apps/api/dist/server.js`.
 
-If you must deploy on Netlify, a Function adapter is provided at `netlify/functions/api.mjs`. This wraps the Node HTTP handler for Netlify Functions using a catch-all `/*` route.
+| Product API | Path prefix | Billing |
+|-------------|-------------|---------|
+| Skills API | `/v1/skills/*` | Per action (credits) |
+| Agent Browser API | `/v1/agent-browser/*` | Per action (credits) |
+| Router | `/v1/router/*` | Per request + tokens |
+| MCP | `/mcp` | Proxies to product APIs |
+| Cloud billing | `/api/v1/cloud/*` | Wallet + Stripe |
 
-**Limitations of the Netlify approach:**
-- Database connections must use an external pooler (e.g., PgBouncer via Neon, Supabase, or Aiven)
-- Provisioning worker (interval-based) will NOT run
-- Cold starts add 3-5 seconds per request
-- Function timeout (26s max on Pro) limits long operations
-- MCP tools that proxy to external APIs may timeout
-- Skills API GitHub fetches may timeout on large profiles
+## Prerequisites
 
----
+- Netlify account with access to `api.talocode.site`
+- PostgreSQL database with connection pooling (Neon, Supabase, or Aiven recommended)
+- `NETLIFY_AUTH_TOKEN` for CLI deploys
+- Stripe keys for wallet top-ups
 
-## Recommended Setup (Railway or Render)
-
-### 1. Create a Railway project
-
-1. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub repo
-2. Select `talocode/stacklane`
-3. Set root directory: `/` (monorepo root)
-4. Build command: `pnpm install --frozen-lockfile`
-5. Start command: `pnpm --filter @stacklane/api start`
-
-### 2. Set environment variables in Railway
-
-Copy all vars from `apps/api/.env.netlify.example` and set:
-- `DATABASE_URL` → Railway PostgreSQL add-on connection string
-- `PORT` → Railway sets this automatically (usually 8080)
-- All AI provider keys as needed
-
-### 3. Add PostgreSQL
-
-1. Railway → New → Database → PostgreSQL
-2. Copy the connection string to `DATABASE_URL`
-3. Run migration once: `pnpm --filter @stacklane/api db:migrate`
-
----
-
-## Netlify Setup (If Required)
-
-### Prerequisites
-
-- Netlify account with access to `api.talocode.site` custom domain
-- DNS A record for `api.talocode.site` pointing to Netlify's load balancer IPs (`75.2.60.5`)
-- PostgreSQL database with external pooler (e.g., Neon, Supabase, Railway PG)
-
-### Step-by-Step
-
-#### 1. Netlify Site Setup
+## Step 1: Netlify Site Setup
 
 | Setting | Value |
 |---------|-------|
-| Site name | `talocode-cloud-api` |
-| Build command | `pnpm install --frozen-lockfile && pnpm --filter @stacklane/api build` |
+| Build command | `npm install -g pnpm@10 && pnpm install --frozen-lockfile && pnpm --filter @stacklane/api build` |
 | Publish directory | `apps/api/dist` |
 | Functions directory | `netlify/functions` |
 
-#### 2. Custom Domain
+`netlify.toml` at the repo root configures build, functions, and redirects.
 
-| Setting | Value |
-|---------|-------|
-| Domain | `api.talocode.site` |
-| DNS | Add CNAME `api` → `talocode-cloud-api.netlify.app` (or Netlify's 75.2.60.5 A record) |
-| SSL | Auto-provisioned by Netlify (Let's Encrypt) |
+## Step 2: Environment Variables
 
-#### 3. Environment Variables (Netlify UI)
+Set in Netlify → Site settings → Environment variables (see `apps/api/.env.netlify.example`):
 
-Set these in Netlify → Site settings → Environment variables:
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | Yes | Pooled PostgreSQL connection string |
+| `TALOCODE_BASE_URL` | Yes | `https://api.talocode.site` |
+| `TALOCODE_WEB_URL` | Yes | `https://talocode.site` |
+| `TALOCODE_MCP_URL` | Yes | `https://api.talocode.site/mcp` |
+| `STRIPE_SECRET_KEY` | For billing | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | For billing | Stripe webhook signing secret |
+| `OPENROUTER_API_KEY` or `OPENAI_API_KEY` | For router | At least one LLM provider |
+| `GITHUB_TOKEN` | Optional | Richer Skills API data |
+| `AGENT_BROWSER_SERVICE_URL` | Optional | Playwright host for screenshots/full browser checks |
 
-```
-NODE_VERSION=22
-NODE_ENV=production
-DATABASE_URL=<postgres://...>
-TALOCODE_BASE_URL=https://api.talocode.site
-TALOCODE_WEB_URL=https://talocode.site
-TALOCODE_MCP_URL=https://api.talocode.site/mcp
-STRIPE_SECRET_KEY=<stripe-secret>
-STRIPE_WEBHOOK_SECRET=<stripe-webhook-secret>
-GITHUB_TOKEN=<github-token>
-OPENROUTER_API_KEY=<openrouter-key>
-GEMINI_API_KEY=<gemini-key>
-```
-
-#### 4. netlify.toml
-
-The `netlify.toml` at the repo root handles:
-- Build command
-- Function settings (esbuild bundler, node_modules externals)
-- Catch-all redirect `/*` → Netlify Function
-
-#### 5. Apex Domain DNS
-
-For `api.talocode.site`:
+## Step 3: Custom Domain DNS
 
 | Record | Type | Value |
 |--------|------|-------|
 | `api` | CNAME | `talocode-cloud-api.netlify.app` |
 
-Or use Netlify's DNS panel to manage the domain directly.
+Or manage DNS in the Netlify domain panel.
 
----
-
-## Build Process
-
-The build step compiles TypeScript to JS:
+## Step 4: Deploy with Netlify CLI
 
 ```bash
-pnpm install --frozen-lockfile \
-  && pnpm --filter @stacklane/api build
+# From Stacklane repo root
+export NETLIFY_AUTH_TOKEN="your-token"
+
+# Link site (first time)
+netlify link
+
+# Production deploy
+netlify deploy --prod
+
+# Or trigger build from CI
+netlify build && netlify deploy --prod --dir=apps/api/dist --functions=netlify/functions
 ```
 
-Output: `apps/api/dist/` (compiled JS from `tsc`)
+## APIs Served
 
-The Netlify Function at `netlify/functions/api.mjs` imports from `../../apps/api/src/server.ts` at dev time, but in production the Netlify build will compile TS and the function should import from `../../apps/api/dist/server.js`.
+| Path | Description |
+|------|-------------|
+| `GET /api/v1/cloud/health` | Cloud health (with DB) |
+| `GET /api/v1/cloud/pricing` | Credit pricing catalog |
+| `POST /v1/skills/generate/*` | Skills API |
+| `GET /v1/skills/health` | Skills health |
+| `POST /v1/agent-browser/check` | HTTP/proxy browser check |
+| `POST /v1/agent-browser/evidence` | Page evidence capture |
+| `POST /v1/agent-browser/trace-report` | Deploy validation trace |
+| `GET /v1/agent-browser/health` | Agent Browser health |
+| `POST /v1/router/chat/completions` | Chat completions |
+| `POST /mcp` | Model Context Protocol endpoint |
+| `POST /api/v1/cloud/billing/stripe/webhook` | Stripe webhook |
 
-> **Note:** The current adapter imports from `.ts` source directly, which requires `tsx` at runtime. A production-ready adapter should import from the compiled output. This is a known limitation of the adapter approach.
+## Agent Browser on Netlify
 
----
+Netlify Functions support **HTTP-based** browser checks out of the box (status, title, response evidence).
 
-## Environment Variables
+For **screenshots and full Playwright checks**, set:
 
-| Variable | Required | Source |
-|----------|----------|--------|
-| `DATABASE_URL` | Yes | PostgreSQL provider |
-| `TALOCODE_BASE_URL` | Yes | `https://api.talocode.site` |
-| `TALOCODE_WEB_URL` | Yes | `https://talocode.site` |
-| `TALOCODE_MCP_URL` | Yes | `https://api.talocode.site/mcp` |
-| `STRIPE_SECRET_KEY` | For billing | Stripe dashboard |
-| `STRIPE_WEBHOOK_SECRET` | For billing | Stripe webhook config |
-| `GITHUB_TOKEN` | Optional | GitHub token for Skills API |
-| `OPENROUTER_API_KEY` | For router | OpenRouter dashboard |
-| `WEB_ORIGIN` | Yes | CORS origin (`https://talocode.site`) |
+```
+AGENT_BROWSER_SERVICE_URL=https://<playwright-host>
+```
 
-See `apps/api/.env.netlify.example` for the full list.
+Point this at any host running `@talocode/agent-browser` API (Render, Fly.io, VPS).
 
----
+## Local Testing Before Deploy
+
+```bash
+pnpm install --frozen-lockfile
+pnpm --filter @stacklane/api build
+pnpm --filter @stacklane/api test
+
+node scripts/check-netlify-readiness.mjs
+node scripts/smoke-netlify-api.mjs
+```
 
 ## Smoke Test After Deploy
 
 ```bash
-# Against production
 TALOCODE_BASE_URL=https://api.talocode.site node scripts/smoke-netlify-api.mjs
 
-# With API key for authenticated tests
 TALOCODE_BASE_URL=https://api.talocode.site \
   TALOCODE_API_KEY=tk_live_xxxx \
   node scripts/smoke-netlify-api.mjs
 ```
 
-The smoke script checks:
-- `GET /api/v1/cloud/health`
-- `GET /health`
-- `GET /v1/router/models`
-- `POST /mcp` (tools/list)
-- `GET /api/v1/cloud/mcp/tools`
-- `GET /v1/skills/health`
-- Authenticated skills generation (if API key set)
-- Response headers
-
----
-
-## Readiness Verification
-
-Before deploying, run:
-
-```bash
-node scripts/check-netlify-readiness.mjs
-```
-
-This verifies:
-- All required files exist
-- Package scripts are configured
-- Health endpoints are defined
-- No `.xyz` primary URLs remain
-- `.env.netlify.example` documents required vars
-- Smoke scripts exist
-
----
-
 ## Rollback Plan
 
-| Scenario | Action |
-|----------|--------|
-| Deploy broken | Netlify → Deploys → Deploy previous successful deploy |
-| DNS misconfigured | Update `api.talocode.site` CNAME back to previous target |
-| Database migration failed | Run rollback migration or restore DB backup |
-| Auth broken | Verify `TALOCODE_API_KEY` env and Stripe keys in Netlify UI |
-| Credits / billing broken | Check Stripe webhook endpoint, verify STRIPE_WEBHOOK_SECRET |
+1. Netlify dashboard → **Deploys** → select last working deploy → **Publish deploy**
+2. Verify `curl https://api.talocode.site/api/v1/cloud/health`
+3. Run `node scripts/smoke-netlify-api.mjs`
+4. If DNS issue, fix `api` CNAME to Netlify target
 
-**Rollback steps:**
-1. Netlify dashboard → Deploys → find last working deploy → "Publish deploy"
-2. Check `https://api.talocode.site/api/v1/cloud/health`
-3. Run smoke test
-4. If still broken, check DNS: ensure CNAME `api` → correct target
+## Troubleshooting
 
----
-
-## Verifying Deployment
-
-```bash
-# 1. Health endpoint
-curl https://api.talocode.site/api/v1/cloud/health
-
-# 2. Router models
-curl https://api.talocode.site/v1/router/models
-
-# 3. Skills health
-curl https://api.talocode.site/v1/skills/health
-
-# 4. MCP tools
-curl -X POST https://api.talocode.site/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}' \
-  -H "Authorization: Bearer $TALOCODE_API_KEY"
-
-# 5. MCP tool list (GET)
-curl https://api.talocode.site/api/v1/cloud/mcp/tools
-```
+| Problem | Cause | Fix |
+|---------|-------|-----|
+| 502 on all routes | Function failed to load | Check build output in `apps/api/dist` |
+| DB errors | Missing or wrong `DATABASE_URL` | Use pooled connection string |
+| Router 500 | No LLM keys | Set `OPENROUTER_API_KEY` or `OPENAI_API_KEY` |
+| Screenshot 503 | No Playwright on Netlify | Set `AGENT_BROWSER_SERVICE_URL` |
+| Stripe webhook fails | Wrong secret | Match `STRIPE_WEBHOOK_SECRET` to Stripe dashboard |

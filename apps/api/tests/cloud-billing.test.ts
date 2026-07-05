@@ -38,12 +38,12 @@ test('pricing config contains all required products', () => {
 })
 
 test('getPricingForAction returns correct credit cost', () => {
-  assert.equal(getPricingForAction('agent_browser', 'browser.check'), 2)
-  assert.equal(getPricingForAction('agent_browser', 'browser.screenshot'), 3)
-  assert.equal(getPricingForAction('agent_browser', 'browser.evidence'), 3)
-  assert.equal(getPricingForAction('agent_browser', 'browser.trace_report'), 5)
-  assert.equal(getPricingForAction('cliploop', 'video.render'), 150)
-  assert.equal(getPricingForAction('codra', 'task.large'), 100)
+  assert.equal(getPricingForAction('agent_browser', 'browser.check'), 5)
+  assert.equal(getPricingForAction('agent_browser', 'browser.screenshot'), 8)
+  assert.equal(getPricingForAction('agent_browser', 'browser.evidence'), 8)
+  assert.equal(getPricingForAction('agent_browser', 'browser.trace_report'), 15)
+  assert.equal(getPricingForAction('cliploop', 'video.render'), 200)
+  assert.equal(getPricingForAction('codra', 'plan'), 40)
 })
 
 test('getPricingForAction returns null for unknown product', () => {
@@ -58,7 +58,7 @@ test('listAllPricing returns complete pricing object', () => {
   const all = listAllPricing()
   assert.equal(all.creditUsdValue, 0.01)
   assert.ok(all.products.agent_browser)
-  assert.equal(all.products.agent_browser['browser.check'], 2)
+  assert.equal(all.products.agent_browser['browser.check'], 5)
 })
 
 test('pricing actions per product are positive integers', () => {

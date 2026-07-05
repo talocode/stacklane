@@ -16,9 +16,9 @@ test('TALOCODE_ROUTER_MODELS has three models', () => {
 
 test('talocode/auto config has expected values', () => {
   const config = TALOCODE_ROUTER_MODELS['talocode/auto']
-  assert.equal(config.creditsPerRequest, 2)
-  assert.equal(config.creditsPer1kInputTokens, 1)
-  assert.equal(config.creditsPer1kOutputTokens, 2)
+  assert.equal(config.creditsPerRequest, 4)
+  assert.equal(config.creditsPer1kInputTokens, 2)
+  assert.equal(config.creditsPer1kOutputTokens, 3)
   assert.ok(config.fallback.includes('openai'))
   assert.ok(config.fallback.includes('openrouter'))
   assert.ok(config.fallback.includes('gemini'))
@@ -26,9 +26,9 @@ test('talocode/auto config has expected values', () => {
 
 test('talocode/fast config has expected values', () => {
   const config = TALOCODE_ROUTER_MODELS['talocode/fast']
-  assert.equal(config.creditsPerRequest, 1)
+  assert.equal(config.creditsPerRequest, 2)
   assert.equal(config.creditsPer1kInputTokens, 1)
-  assert.equal(config.creditsPer1kOutputTokens, 1)
+  assert.equal(config.creditsPer1kOutputTokens, 2)
   assert.ok(!config.fallback.includes('openai'))
   assert.ok(config.fallback.includes('openrouter'))
   assert.ok(config.fallback.includes('gemini'))
@@ -36,9 +36,9 @@ test('talocode/fast config has expected values', () => {
 
 test('talocode/coding config has expected values', () => {
   const config = TALOCODE_ROUTER_MODELS['talocode/coding']
-  assert.equal(config.creditsPerRequest, 3)
-  assert.equal(config.creditsPer1kInputTokens, 2)
-  assert.equal(config.creditsPer1kOutputTokens, 4)
+  assert.equal(config.creditsPerRequest, 5)
+  assert.equal(config.creditsPer1kInputTokens, 3)
+  assert.equal(config.creditsPer1kOutputTokens, 6)
   assert.ok(config.fallback.includes('openai'))
   assert.ok(config.fallback.includes('openrouter'))
   assert.ok(!config.fallback.includes('gemini'))
@@ -70,29 +70,29 @@ test('isRouterModel returns false for unknown model', () => {
 test('computeRequestCredits includes base + input + output', () => {
   const config = TALOCODE_ROUTER_MODELS['talocode/auto']
   const credits = computeRequestCredits(config, 1000, 500)
-  // base: 2, input: ceil(1000/1000)*1 = 1, output: ceil(500/1000)*2 = 1
-  assert.equal(credits, 4)
+  // base: 4, input: ceil(1000/1000)*2 = 2, output: ceil(500/1000)*3 = 2
+  assert.equal(credits, 8)
 })
 
 test('computeRequestCredits for fast model', () => {
   const config = TALOCODE_ROUTER_MODELS['talocode/fast']
   const credits = computeRequestCredits(config, 2000, 1000)
-  // base: 1, input: ceil(2000/1000)*1 = 2, output: ceil(1000/1000)*1 = 1
-  assert.equal(credits, 4)
+  // base: 2, input: ceil(2000/1000)*1 = 2, output: ceil(1000/1000)*2 = 2
+  assert.equal(credits, 6)
 })
 
 test('computeRequestCredits for coding model', () => {
   const config = TALOCODE_ROUTER_MODELS['talocode/coding']
   const credits = computeRequestCredits(config, 500, 250)
-  // base: 3, input: ceil(500/1000)*2 = 1, output: ceil(250/1000)*4 = 1
-  assert.equal(credits, 5)
+  // base: 5, input: ceil(500/1000)*3 = 3, output: ceil(250/1000)*6 = 6
+  assert.equal(credits, 9)
 })
 
 test('computeRequestCredits with zero tokens uses minimum', () => {
   const config = TALOCODE_ROUTER_MODELS['talocode/auto']
   const credits = computeRequestCredits(config, 0, 0)
-  // base: 2, input: ceil(0/1000)*1 = 0, output: ceil(0/1000)*2 = 0
-  assert.equal(credits, 2)
+  // base: 4, input: ceil(0/1000)*2 = 0, output: ceil(0/1000)*3 = 0
+  assert.equal(credits, 4)
 })
 
 // ─── Token Estimation ──────────────────────────────────────────────────────

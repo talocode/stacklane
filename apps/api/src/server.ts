@@ -557,6 +557,174 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     throw new HttpError(404, 'NOT_FOUND', 'Skills API route not found.', { method: req.method, path })
   }
 
+  // ─── Talocode Agent Browser API (API-key authenticated) ─────────────────
+
+  if (path.startsWith('/v1/agent-browser/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+
+    if (req.method === 'GET' && path === '/v1/agent-browser/health') {
+      sendData(res, 200, {
+        status: 'ok',
+        version: '0.1.0',
+        mode: process.env.AGENT_BROWSER_SERVICE_URL ? 'proxy' : 'http',
+        endpoints: [
+          'POST /v1/agent-browser/check',
+          'POST /v1/agent-browser/screenshot',
+          'POST /v1/agent-browser/evidence',
+          'POST /v1/agent-browser/trace-report',
+          'GET /v1/agent-browser/health',
+        ],
+      })
+      return
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req)
+      const {
+        runBrowserCheck,
+        runBrowserScreenshot,
+        runBrowserEvidence,
+        runBrowserTraceReport,
+      } = await import('./services/agent-browser.js')
+
+      if (path === '/v1/agent-browser/check') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'agent_browser',
+          action: 'browser.check',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await runBrowserCheck({
+            url,
+            screenshot: body.screenshot === true,
+            vision: body.vision === true,
+            sessionId: typeof body.sessionId === 'string' ? body.sessionId : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'agent_browser.browser.check' } })
+        } catch (error) {
+          throw new HttpError(422, 'BROWSER_ERROR', error instanceof Error ? error.message : 'Browser check failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/agent-browser/screenshot') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'agent_browser',
+          action: 'browser.screenshot',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await runBrowserScreenshot({
+            url,
+            fullPage: body.fullPage === true,
+            width: typeof body.width === 'number' ? body.width : undefined,
+            height: typeof body.height === 'number' ? body.height : undefined,
+            sessionId: typeof body.sessionId === 'string' ? body.sessionId : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'agent_browser.browser.screenshot' } })
+        } catch (error) {
+          throw new HttpError(503, 'BROWSER_UNAVAILABLE', error instanceof Error ? error.message : 'Screenshot capture unavailable.')
+        }
+        return
+      }
+
+      if (path === '/v1/agent-browser/evidence') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'agent_browser',
+          action: 'browser.evidence',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await runBrowserEvidence({
+            url,
+            sessionId: typeof body.sessionId === 'string' ? body.sessionId : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'agent_browser.browser.evidence' } })
+        } catch (error) {
+          throw new HttpError(422, 'BROWSER_ERROR', error instanceof Error ? error.message : 'Evidence capture failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/agent-browser/trace-report') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'agent_browser',
+          action: 'browser.trace_report',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await runBrowserTraceReport({
+            url,
+            sessionId: typeof body.sessionId === 'string' ? body.sessionId : undefined,
+            steps: Array.isArray(body.steps)
+              ? body.steps.filter((step: unknown) => typeof step === 'object' && step !== null) as { action: string; selector?: string; value?: string }[]
+              : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'agent_browser.browser.trace_report' } })
+        } catch (error) {
+          throw new HttpError(422, 'BROWSER_ERROR', error instanceof Error ? error.message : 'Trace report failed.')
+        }
+        return
+      }
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'Agent Browser API route not found.', { method: req.method, path })
+  }
+
   // ─── Stripe Webhook (no session auth) ──────────────────────────────────
 
   if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {

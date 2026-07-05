@@ -156,7 +156,7 @@ Do not reuse local `whsec_` secrets in production.
 
 ### 2. Set Production Environment Variables
 
-Add these to your deployment platform (e.g., Netlify, Railway):
+Add these to your deployment platform (Netlify):
 
 | Variable | Source |
 |---|---|

@@ -103,6 +103,15 @@ async function run() {
     if (!Array.isArray(r.body.endpoints)) throw new Error('Expected endpoints array')
   })
 
+  // 3b. Agent Browser API
+  log('\n3b. Agent Browser API')
+  await assert('GET /v1/agent-browser/health returns 200', async () => {
+    const r = await fetchJson(`${BASE_URL}/v1/agent-browser/health`)
+    if (r.status !== 200) throw new Error(`Expected 200, got ${r.status}`)
+    if (r.body.status !== 'ok') throw new Error('Agent Browser health not ok')
+    if (!Array.isArray(r.body.endpoints)) throw new Error('Expected endpoints array')
+  })
+
   // 4. Authenticated endpoints (if API key is present)
   if (API_KEY) {
     log('\n4. Authenticated checks (API key set)')
