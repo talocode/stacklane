@@ -51,6 +51,14 @@ describe('Talocode MCP v0.1', () => {
         'tera_coding_review',
         'tera_writing_draft',
         'tera_writing_rewrite',
+        'webdatalane_crawl_plan',
+        'webdatalane_extract',
+        'webdatalane_fetch',
+        'webdatalane_links',
+        'webdatalane_markdown',
+        'webdatalane_metadata',
+        'webdatalane_screenshot',
+        'webdatalane_structured',
       ])
     })
 
@@ -446,6 +454,56 @@ describe('Talocode MCP v0.1', () => {
       const report = TOOL_MAP.get('signallane_x_report')!
       assert.strictEqual(report.route, '/v1/signallane/x/report')
       assert.strictEqual(report.estimatedCredits, 60)
+    })
+
+    it('webdatalane tools reference correct routes', () => {
+      const fetchTool = TOOL_MAP.get('webdatalane_fetch')!
+      assert.strictEqual(fetchTool.route, '/v1/webdatalane/fetch')
+      assert.strictEqual(fetchTool.product, 'webdatalane')
+      assert.strictEqual(fetchTool.estimatedCredits, 5)
+
+      const extract = TOOL_MAP.get('webdatalane_extract')!
+      assert.strictEqual(extract.route, '/v1/webdatalane/extract')
+      assert.strictEqual(extract.estimatedCredits, 10)
+
+      const markdown = TOOL_MAP.get('webdatalane_markdown')!
+      assert.strictEqual(markdown.route, '/v1/webdatalane/markdown')
+      assert.strictEqual(markdown.estimatedCredits, 10)
+
+      const metadata = TOOL_MAP.get('webdatalane_metadata')!
+      assert.strictEqual(metadata.route, '/v1/webdatalane/metadata')
+      assert.strictEqual(metadata.estimatedCredits, 5)
+
+      const links = TOOL_MAP.get('webdatalane_links')!
+      assert.strictEqual(links.route, '/v1/webdatalane/links')
+      assert.strictEqual(links.estimatedCredits, 5)
+
+      const structured = TOOL_MAP.get('webdatalane_structured')!
+      assert.strictEqual(structured.route, '/v1/webdatalane/structured')
+      assert.strictEqual(structured.estimatedCredits, 20)
+
+      const plan = TOOL_MAP.get('webdatalane_crawl_plan')!
+      assert.strictEqual(plan.route, '/v1/webdatalane/crawl/plan')
+      assert.strictEqual(plan.estimatedCredits, 15)
+
+      const screenshot = TOOL_MAP.get('webdatalane_screenshot')!
+      assert.strictEqual(screenshot.route, '/v1/webdatalane/screenshot')
+      assert.strictEqual(screenshot.estimatedCredits, 50)
+    })
+
+    it('webdatalane_fetch requires url', () => {
+      const tool = TOOL_MAP.get('webdatalane_fetch')!
+      assert.ok(tool.inputSchema.required?.includes('url'))
+    })
+
+    it('webdatalane_structured requires schema', () => {
+      const tool = TOOL_MAP.get('webdatalane_structured')!
+      assert.ok(tool.inputSchema.required?.includes('schema'))
+    })
+
+    it('webdatalane_crawl_plan requires url', () => {
+      const tool = TOOL_MAP.get('webdatalane_crawl_plan')!
+      assert.ok(tool.inputSchema.required?.includes('url'))
     })
 
     it('signallane tools require handle', () => {

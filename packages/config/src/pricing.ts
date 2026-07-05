@@ -56,6 +56,16 @@ export const TALOCODE_CLOUD_PRICING = {
       "workflow.small": 15,
       "workflow.large": 40
     },
+    webdatalane: {
+      "webdatalane.fetch": 5,
+      "webdatalane.extract": 10,
+      "webdatalane.markdown": 10,
+      "webdatalane.metadata": 5,
+      "webdatalane.links": 5,
+      "webdatalane.structured": 20,
+      "webdatalane.crawl.plan": 15,
+      "webdatalane.screenshot": 50
+    },
     talocode_router: {
       "chat.fast": 3,
       "chat.auto": 5,

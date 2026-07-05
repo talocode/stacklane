@@ -302,6 +302,101 @@ export const invoicelaneExportCsvSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const webdatalaneFetchSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to fetch' },
+    timeoutMs: { type: 'number', description: 'Request timeout in milliseconds' },
+    userAgent: { type: 'string', description: 'Custom User-Agent string' },
+    maxBytes: { type: 'number', description: 'Maximum response bytes' },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const webdatalaneExtractSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to extract from' },
+    html: { type: 'string', description: 'Raw HTML to extract from' },
+    include: { type: 'array', items: { type: 'string' }, description: 'Fields to include: metadata, links, markdown, headings, images, jsonLd, tables' },
+    timeoutMs: { type: 'number', description: 'Request timeout' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const webdatalaneMarkdownSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to convert' },
+    html: { type: 'string', description: 'Raw HTML to convert' },
+    stripNavigation: { type: 'boolean', description: 'Strip nav/footer/header elements' },
+    includeLinks: { type: 'boolean', description: 'Include links in output' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const webdatalaneMetadataSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to extract metadata from' },
+    html: { type: 'string', description: 'Raw HTML' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const webdatalaneLinksSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to extract links from' },
+    html: { type: 'string', description: 'Raw HTML' },
+    internalOnly: { type: 'boolean', description: 'Only return internal links' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const webdatalaneStructuredSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to extract from' },
+    html: { type: 'string', description: 'Raw HTML' },
+    schema: { type: 'object', description: 'Schema of fields to extract (key: type)' },
+    hints: { type: 'object', description: 'Hints for field extraction (key: [selectors])' },
+  },
+  required: ['schema'],
+  additionalProperties: false,
+}
+
+export const webdatalaneCrawlPlanSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'Seed URL for crawl' },
+    html: { type: 'string', description: 'Raw HTML' },
+    maxPages: { type: 'number', description: 'Maximum pages to crawl' },
+    sameDomainOnly: { type: 'boolean', description: 'Only include same-domain links' },
+    includePatterns: { type: 'array', items: { type: 'string' }, description: 'URL patterns to include' },
+    excludePatterns: { type: 'array', items: { type: 'string' }, description: 'URL patterns to exclude' },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const webdatalaneScreenshotSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to screenshot' },
+    width: { type: 'number', description: 'Viewport width' },
+    height: { type: 'number', description: 'Viewport height' },
+    fullPage: { type: 'boolean', description: 'Capture full page' },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
 export const signallaneXAnalyzeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

@@ -218,6 +218,151 @@ describe('Talocode SDK', () => {
       }
     })
 
+    it('has webdatalane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.webdatalane)
+      assert.strictEqual(typeof c.webdatalane.health, 'function')
+      assert.strictEqual(typeof c.webdatalane.fetch, 'function')
+      assert.strictEqual(typeof c.webdatalane.extract, 'function')
+      assert.strictEqual(typeof c.webdatalane.markdown, 'function')
+      assert.strictEqual(typeof c.webdatalane.metadata, 'function')
+      assert.strictEqual(typeof c.webdatalane.links, 'function')
+      assert.strictEqual(typeof c.webdatalane.structured, 'function')
+      assert.strictEqual(typeof c.webdatalane.crawlPlan, 'function')
+      assert.strictEqual(typeof c.webdatalane.screenshot, 'function')
+    })
+
+    it('webdatalane.health returns expected shape', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ ok: true, service: 'webdatalane', version: '0.1.0', timestamp: new Date().toISOString() }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        const res = await c.webdatalane.health()
+        assert.ok(capturedUrl.includes('/v1/webdatalane/health'))
+        assert.strictEqual(res.ok, true)
+        assert.strictEqual(res.service, 'webdatalane')
+        assert.strictEqual(res.version, '0.1.0')
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('webdatalane.fetch calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { result: {} }, usage: { action: 'webdatalane.fetch', credits: 5, remaining: 995 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.webdatalane.fetch({ url: 'https://example.com' })
+        assert.ok(capturedUrl.includes('/v1/webdatalane/fetch'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('webdatalane.markdown calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { result: { markdown: '# hi' } }, usage: { action: 'webdatalane.markdown', credits: 10, remaining: 990 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.webdatalane.markdown({ url: 'https://example.com' })
+        assert.ok(capturedUrl.includes('/v1/webdatalane/markdown'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('webdatalane.metadata calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { result: { title: 'Test' } }, usage: { action: 'webdatalane.metadata', credits: 5, remaining: 995 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.webdatalane.metadata({ url: 'https://example.com' })
+        assert.ok(capturedUrl.includes('/v1/webdatalane/metadata'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('webdatalane.links calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { result: { links: [] } }, usage: { action: 'webdatalane.links', credits: 5, remaining: 995 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.webdatalane.links({ url: 'https://example.com' })
+        assert.ok(capturedUrl.includes('/v1/webdatalane/links'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('webdatalane.structured calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { result: { data: {} } }, usage: { action: 'webdatalane.structured', credits: 20, remaining: 980 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.webdatalane.structured({ schema: { title: 'string' } })
+        assert.ok(capturedUrl.includes('/v1/webdatalane/structured'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('webdatalane.crawlPlan calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: { result: { urls: [] } }, usage: { action: 'webdatalane.crawl.plan', credits: 15, remaining: 985 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.webdatalane.crawlPlan({ url: 'https://example.com' })
+        assert.ok(capturedUrl.includes('/v1/webdatalane/crawl/plan'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('webdatalane.screenshot calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ data: {}, usage: { action: 'webdatalane.screenshot', credits: 50, remaining: 950 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.webdatalane.screenshot({ url: 'https://example.com' })
+        assert.ok(capturedUrl.includes('/v1/webdatalane/screenshot'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('has signallane namespace', () => {
       const c = new Talocode()
       assert.ok(c.signallane)
