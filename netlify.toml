@@ -9,7 +9,9 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = ["pg", "stripe", "drizzle-orm", "zod"]
-  included_files = ["apps/api/src/**/*"]
+  included_files = ["apps/api/dist/**/*", "apps/api/src/**/*"]
+
+[functions.api]
   timeout = 26
 
 [context.production]

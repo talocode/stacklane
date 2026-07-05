@@ -7,17 +7,37 @@ export const config = {
   preferStatic: true,
 }
 
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+
+const FUNCTION_DIR = dirname(fileURLToPath(import.meta.url))
+const DEPLOY_ROOT = join(FUNCTION_DIR, '../..')
+
+async function loadApiHandler() {
+  const candidates = [
+    join(DEPLOY_ROOT, 'apps/api/dist/server.js'),
+    join(DEPLOY_ROOT, 'dist/server.js'),
+    join(DEPLOY_ROOT, 'apps/api/src/server.ts'),
+  ]
+
+  for (const candidate of candidates) {
+    try {
+      const mod = await import(candidate)
+      if (typeof mod.handler === 'function') return mod.handler
+    } catch {
+      // try next candidate
+    }
+  }
+
+  return null
+}
+
 export async function handler(event, context) {
   let apiHandler
 
   try {
-    // Try compiled output first (production)
-    apiHandler = (await import('../../apps/api/dist/server.js')).handler
-  } catch {
-    try {
-      // Fall back to tsx-transpiled source (development)
-      apiHandler = (await import('../../apps/api/src/server.ts')).handler
-    } catch {
+    apiHandler = await loadApiHandler()
+    if (!apiHandler) {
       return {
         statusCode: 500,
         headers: { 'content-type': 'application/json' },
@@ -25,6 +45,14 @@ export async function handler(event, context) {
           error: { code: 'MODULE_NOT_FOUND', message: 'API handler module could not be loaded.' },
         }),
       }
+    }
+  } catch {
+    return {
+      statusCode: 500,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        error: { code: 'MODULE_NOT_FOUND', message: 'API handler module could not be loaded.' },
+      }),
     }
   }
 
