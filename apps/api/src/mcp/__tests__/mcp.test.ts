@@ -507,6 +507,19 @@ describe('Talocode MCP v0.1', () => {
       assert.ok(tool.inputSchema.required?.includes('to'))
     })
 
+    it('forgecad tools have correct routes', () => {
+      const design = TOOL_MAP.get('forgecad_design_generate')!
+      assert.strictEqual(design.route, '/v1/forgecad/design/generate')
+      assert.strictEqual(design.estimatedCredits, 60)
+      const openscad = TOOL_MAP.get('forgecad_openscad_generate')!
+      assert.strictEqual(openscad.route, '/v1/forgecad/openscad/generate')
+    })
+
+    it('forgecad_design_generate requires projectType', () => {
+      const tool = TOOL_MAP.get('forgecad_design_generate')!
+      assert.ok(tool.inputSchema.required?.includes('projectType'))
+    })
+
     it('signallane tools require handle', () => {
       for (const name of ['signallane_x_analyze', 'signallane_x_content_plan', 'signallane_x_post_drafts', 'signallane_x_experiments', 'signallane_x_report']) {
         const tool = TOOL_MAP.get(name)!

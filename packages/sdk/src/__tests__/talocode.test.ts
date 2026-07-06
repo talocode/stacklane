@@ -675,6 +675,41 @@ describe('Talocode SDK', () => {
       }
     })
 
+    it('has forgecad namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.forgecad)
+      assert.strictEqual(typeof c.forgecad.health, 'function')
+      assert.strictEqual(typeof c.forgecad.design.generate, 'function')
+      assert.strictEqual(typeof c.forgecad.openscad.generate, 'function')
+      assert.strictEqual(typeof c.forgecad.bom.generate, 'function')
+      assert.strictEqual(typeof c.forgecad.cutList.generate, 'function')
+      assert.strictEqual(typeof c.forgecad.assembly.plan, 'function')
+      assert.strictEqual(typeof c.forgecad.printability.check, 'function')
+      assert.strictEqual(typeof c.forgecad.manufacturability.check, 'function')
+      assert.strictEqual(typeof c.forgecad.design.review, 'function')
+      assert.strictEqual(typeof c.forgecad.material.estimate, 'function')
+      assert.strictEqual(typeof c.forgecad.tools.detect, 'function')
+      assert.strictEqual(typeof c.forgecad.render.openscad, 'function')
+      assert.strictEqual(typeof c.forgecad.export.markdown, 'function')
+      assert.strictEqual(typeof c.forgecad.export.json, 'function')
+    })
+
+    it('forgecad.design.generate calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ result: { humanReviewRequired: true }, usage: { action: 'forgecad.design.generate', credits: 60 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.forgecad.design.generate({ projectType: 'enclosure', description: 'test' })
+        assert.ok(capturedUrl.includes('/v1/forgecad/design/generate'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('has signallane namespace', () => {
       const c = new Talocode()
       assert.ok(c.signallane)

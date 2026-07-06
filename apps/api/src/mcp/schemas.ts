@@ -681,6 +681,158 @@ export const opensourcelaneExportJsonSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+const forgecadDimensionsSchema = {
+  type: 'object',
+  properties: {
+    length: { type: 'number' },
+    width: { type: 'number' },
+    height: { type: 'number' },
+    thickness: { type: 'number' },
+    unit: { type: 'string', enum: ['mm', 'cm', 'm', 'inch'] },
+  },
+}
+
+export const forgecadDesignGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    projectType: { type: 'string', description: 'enclosure, bracket, mount, stand, box, tray, frame, etc.' },
+    description: { type: 'string' },
+    dimensions: forgecadDimensionsSchema,
+    manufacturingMethod: { type: 'string' },
+    material: { type: 'string' },
+    requirements: { type: 'array', items: { type: 'string' } },
+    constraints: { type: 'object' },
+  },
+  required: ['projectType'],
+  additionalProperties: false,
+}
+
+export const forgecadOpenScadGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    projectType: { type: 'string' },
+    dimensions: forgecadDimensionsSchema,
+    features: { type: 'array', items: { type: 'string' } },
+    manufacturingMethod: { type: 'string' },
+    material: { type: 'string' },
+  },
+  required: ['projectType'],
+  additionalProperties: false,
+}
+
+export const forgecadBomGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    projectType: { type: 'string' },
+    parts: { type: 'array', items: { type: 'object' } },
+    fasteners: { type: 'array', items: { type: 'string' } },
+    material: { type: 'string' },
+  },
+  additionalProperties: false,
+}
+
+export const forgecadCutlistGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    projectType: { type: 'string' },
+    dimensions: forgecadDimensionsSchema,
+    material: { type: 'string' },
+    members: { type: 'array', items: { type: 'object' } },
+  },
+  additionalProperties: false,
+}
+
+export const forgecadAssemblyPlanSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    projectType: { type: 'string' },
+    parts: { type: 'array', items: { type: 'object' } },
+    design: { type: 'object' },
+  },
+  additionalProperties: false,
+}
+
+export const forgecadPrintabilityCheckSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    manufacturingMethod: { type: 'string' },
+    material: { type: 'string' },
+    dimensions: forgecadDimensionsSchema,
+    features: { type: 'array', items: { type: 'string' } },
+    constraints: { type: 'object' },
+  },
+  additionalProperties: false,
+}
+
+export const forgecadManufacturabilityCheckSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    manufacturingMethod: { type: 'string' },
+    material: { type: 'string' },
+    dimensions: forgecadDimensionsSchema,
+    features: { type: 'array', items: { type: 'string' } },
+  },
+  additionalProperties: false,
+}
+
+export const forgecadDesignReviewSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    design: { type: 'object' },
+    requirements: { type: 'array', items: { type: 'string' } },
+    manufacturingMethod: { type: 'string' },
+  },
+  additionalProperties: false,
+}
+
+export const forgecadMaterialEstimateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    projectType: { type: 'string' },
+    dimensions: forgecadDimensionsSchema,
+    material: { type: 'string' },
+    manufacturingMethod: { type: 'string' },
+  },
+  additionalProperties: false,
+}
+
+export const forgecadToolsDetectSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const forgecadRenderOpenScadSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    code: { type: 'string', description: 'OpenSCAD source code' },
+    format: { type: 'string', enum: ['stl', 'png', 'off'] },
+    filename: { type: 'string' },
+  },
+  required: ['code'],
+  additionalProperties: false,
+}
+
+export const forgecadExportMarkdownSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object' },
+    title: { type: 'string' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
+
+export const forgecadExportJsonSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object' },
+    title: { type: 'string' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
+
 export const signallaneXAnalyzeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {
