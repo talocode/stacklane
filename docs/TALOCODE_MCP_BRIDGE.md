@@ -99,6 +99,6 @@ Configure MCP servers in your OpenCode config:
 
 ## Limitations
 
-- v0.1 — not yet published to npm. Install locally from the workspace or wait for the npm release
+- Install from npm: `npx @talocode/mcp`
 - Requires network access to the remote MCP endpoint
 - No SSE streaming (all responses are synchronous JSON)

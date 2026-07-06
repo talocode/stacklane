@@ -1,4 +1,4 @@
-import { redactApiKey } from './config'
+import { redactApiKey } from './config.js'
 
 export interface ForwardResult {
   ok: boolean

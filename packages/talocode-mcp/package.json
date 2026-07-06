@@ -8,15 +8,25 @@
   "bin": {
     "talocode-mcp": "dist/index.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/__tests__/*.test.ts",
-    "clean": "rm -rf dist"
+    "test": "npm run build && node --test dist/__tests__/bridge.test.js",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run test && npm pack --dry-run",
+    "pack:dry": "npm pack --dry-run"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0"
@@ -26,8 +36,28 @@
     "tsx": "^4.7.1",
     "typescript": "^5.7.3"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/talocode/stacklane.git",
+    "directory": "packages/talocode-mcp"
+  },
+  "homepage": "https://github.com/talocode/stacklane/tree/main/packages/talocode-mcp",
+  "bugs": {
+    "url": "https://github.com/talocode/stacklane/issues"
+  },
+  "keywords": [
+    "talocode",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "agents",
+    "stdio"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
-  },
-  "private": true
+  }
 }

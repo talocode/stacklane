@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert'
-import { TalocodeMcpBridgeClient } from '../client'
-import { loadConfig, redactApiKey } from '../config'
+import { TalocodeMcpBridgeClient } from '../client.js'
+import { loadConfig, redactApiKey } from '../config.js'
 
 const ORIGINAL_ENV = { ...process.env }
 

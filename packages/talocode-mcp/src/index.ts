@@ -5,8 +5,8 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
-import { loadConfig, redactApiKey } from './config'
-import { TalocodeMcpBridgeClient } from './client'
+import { loadConfig, redactApiKey } from './config.js'
+import { TalocodeMcpBridgeClient } from './client.js'
 
 async function main(): Promise<void> {
   const config = loadConfig()
