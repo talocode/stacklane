@@ -538,6 +538,149 @@ export const crawlerlaneExportJsonSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const opensourcelaneRepoAnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    repo: { type: 'string', description: 'GitHub repo slug (e.g. hudy9x/namviek)' },
+    repoUrl: { type: 'string', description: 'Full GitHub URL' },
+    category: { type: 'string', description: 'Tool category' },
+    metadata: { type: 'object', description: 'User-provided repo metadata (stars, contributors, etc.)' },
+    readme: { type: 'string', description: 'README text' },
+    requirements: { type: 'array', items: { type: 'string' }, description: 'Required features' },
+  },
+  additionalProperties: false,
+}
+
+export const opensourcelaneAlternativesFindSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    replace: { type: 'string', description: 'SaaS tool to replace (e.g. Jira, Notion)' },
+    teamSize: { type: 'number', description: 'Team size' },
+    budget: { type: 'string', enum: ['low', 'medium', 'high'] },
+    deployment: { type: 'string', description: 'Deployment preference (self_hosted, docker, cloud)' },
+    requiredFeatures: { type: 'array', items: { type: 'string' } },
+    riskTolerance: { type: 'string', enum: ['low', 'medium', 'high'] },
+  },
+  required: ['replace'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneMigrationPlanSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    from: { type: 'string', description: 'Current SaaS tool' },
+    to: { type: 'string', description: 'Target open-source repo or tool' },
+    teamSize: { type: 'number' },
+    currentWorkflow: { type: 'array', items: { type: 'string' } },
+    constraints: { type: 'object', description: 'Migration constraints (downtime, hosting)' },
+  },
+  required: ['from', 'to'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneCostEstimateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    currentTool: { type: 'string' },
+    teamSize: { type: 'number' },
+    currentMonthlyCost: { type: 'number', description: 'Current monthly SaaS cost in USD' },
+    hostingCost: { type: 'number' },
+    maintenanceHoursPerMonth: { type: 'number' },
+    hourlyRate: { type: 'number' },
+  },
+  required: ['currentTool', 'currentMonthlyCost'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneRiskScoreSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    repo: { type: 'string', description: 'GitHub repo slug' },
+    metadata: { type: 'object' },
+    requirements: { type: 'array', items: { type: 'string' } },
+    readme: { type: 'string' },
+  },
+  required: ['repo'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneBriefGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    tool: { type: 'string' },
+    repo: { type: 'string' },
+    replace: { type: 'string' },
+    teamSize: { type: 'number' },
+    analysis: { type: 'object' },
+  },
+  required: ['tool', 'repo', 'replace'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneToolsCompareSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    tools: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          repo: { type: 'string' },
+          metadata: { type: 'object' },
+        },
+        required: ['name', 'repo'],
+      },
+    },
+    criteria: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['tools'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneDeploymentPlanSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    tool: { type: 'string' },
+    deployment: { type: 'string' },
+    teamSize: { type: 'number' },
+    environment: { type: 'string' },
+  },
+  required: ['tool'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneLicenseAuditSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    repo: { type: 'string' },
+    license: { type: 'string' },
+    intendedUse: { type: 'string' },
+  },
+  required: ['repo'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneExportMarkdownSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object', description: 'Analysis data to export' },
+    title: { type: 'string' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
+
+export const opensourcelaneExportJsonSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object', description: 'Analysis data to export' },
+    title: { type: 'string' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
+
 export const signallaneXAnalyzeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

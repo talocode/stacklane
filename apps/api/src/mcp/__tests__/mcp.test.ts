@@ -487,6 +487,26 @@ describe('Talocode MCP v0.1', () => {
       assert.ok(tool.inputSchema.required?.includes('logs'))
     })
 
+    it('opensourcelane tools have correct routes', () => {
+      const find = TOOL_MAP.get('opensourcelane_alternatives_find')!
+      assert.strictEqual(find.route, '/v1/opensourcelane/alternatives/find')
+      assert.strictEqual(find.estimatedCredits, 30)
+      const plan = TOOL_MAP.get('opensourcelane_migration_plan')!
+      assert.strictEqual(plan.route, '/v1/opensourcelane/migration/plan')
+      assert.strictEqual(plan.estimatedCredits, 50)
+    })
+
+    it('opensourcelane_alternatives_find requires replace', () => {
+      const tool = TOOL_MAP.get('opensourcelane_alternatives_find')!
+      assert.ok(tool.inputSchema.required?.includes('replace'))
+    })
+
+    it('opensourcelane_migration_plan requires from and to', () => {
+      const tool = TOOL_MAP.get('opensourcelane_migration_plan')!
+      assert.ok(tool.inputSchema.required?.includes('from'))
+      assert.ok(tool.inputSchema.required?.includes('to'))
+    })
+
     it('signallane tools require handle', () => {
       for (const name of ['signallane_x_analyze', 'signallane_x_content_plan', 'signallane_x_post_drafts', 'signallane_x_experiments', 'signallane_x_report']) {
         const tool = TOOL_MAP.get(name)!

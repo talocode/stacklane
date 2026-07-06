@@ -166,6 +166,7 @@ export { SkillsClient } from './skills'
 export { SignalLaneClient } from './signallane.js'
 export { UGCLaneClient } from './ugclane.js'
 export { CrawlerLaneClient } from './crawlerlane.js'
+export { OpenSourceLaneClient } from './opensourcelane.js'
 export {
   CodraClientPlaceholder,
   TradiaClientPlaceholder,

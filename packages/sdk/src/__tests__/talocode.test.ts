@@ -626,6 +626,55 @@ describe('Talocode SDK', () => {
       }
     })
 
+    it('has opensourcelane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.opensourcelane)
+      assert.strictEqual(typeof c.opensourcelane.health, 'function')
+      assert.strictEqual(typeof c.opensourcelane.repo.analyze, 'function')
+      assert.strictEqual(typeof c.opensourcelane.alternatives.find, 'function')
+      assert.strictEqual(typeof c.opensourcelane.migration.plan, 'function')
+      assert.strictEqual(typeof c.opensourcelane.cost.estimate, 'function')
+      assert.strictEqual(typeof c.opensourcelane.risk.score, 'function')
+      assert.strictEqual(typeof c.opensourcelane.brief.generate, 'function')
+      assert.strictEqual(typeof c.opensourcelane.tools.compare, 'function')
+      assert.strictEqual(typeof c.opensourcelane.deployment.plan, 'function')
+      assert.strictEqual(typeof c.opensourcelane.license.audit, 'function')
+      assert.strictEqual(typeof c.opensourcelane.export.markdown, 'function')
+      assert.strictEqual(typeof c.opensourcelane.export.json, 'function')
+    })
+
+    it('opensourcelane.alternatives.find calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ result: { alternatives: [] }, usage: { action: 'opensourcelane.alternatives.find', credits: 30 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.opensourcelane.alternatives.find({ replace: 'Jira', teamSize: 6 })
+        assert.ok(capturedUrl.includes('/v1/opensourcelane/alternatives/find'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
+    it('opensourcelane.migration.plan calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ result: { phases: [] }, usage: { action: 'opensourcelane.migration.plan', credits: 50 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.opensourcelane.migration.plan({ from: 'Jira', to: 'hudy9x/namviek', teamSize: 6 })
+        assert.ok(capturedUrl.includes('/v1/opensourcelane/migration/plan'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('has signallane namespace', () => {
       const c = new Talocode()
       assert.ok(c.signallane)
