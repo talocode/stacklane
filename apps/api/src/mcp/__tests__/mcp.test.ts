@@ -520,6 +520,20 @@ describe('Talocode MCP v0.1', () => {
       assert.ok(tool.inputSchema.required?.includes('projectType'))
     })
 
+    it('replylane tools have correct routes', () => {
+      const score = TOOL_MAP.get('replylane_opportunity_score')!
+      assert.strictEqual(score.route, '/v1/replylane/opportunity/score')
+      assert.strictEqual(score.estimatedCredits, 15)
+      const draft = TOOL_MAP.get('replylane_replies_draft')!
+      assert.strictEqual(draft.route, '/v1/replylane/replies/draft')
+    })
+
+    it('replylane_opportunity_score requires tweetText and authorHandle', () => {
+      const tool = TOOL_MAP.get('replylane_opportunity_score')!
+      assert.ok(tool.inputSchema.required?.includes('tweetText'))
+      assert.ok(tool.inputSchema.required?.includes('authorHandle'))
+    })
+
     it('signallane tools require handle', () => {
       for (const name of ['signallane_x_analyze', 'signallane_x_content_plan', 'signallane_x_post_drafts', 'signallane_x_experiments', 'signallane_x_report']) {
         const tool = TOOL_MAP.get(name)!

@@ -710,6 +710,37 @@ describe('Talocode SDK', () => {
       }
     })
 
+    it('has replylane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.replylane)
+      assert.strictEqual(typeof c.replylane.health, 'function')
+      assert.strictEqual(typeof c.replylane.opportunity.score, 'function')
+      assert.strictEqual(typeof c.replylane.targets.rank, 'function')
+      assert.strictEqual(typeof c.replylane.replies.draft, 'function')
+      assert.strictEqual(typeof c.replylane.replies.risk, 'function')
+      assert.strictEqual(typeof c.replylane.posts.grokCheck, 'function')
+      assert.strictEqual(typeof c.replylane.activity.audit, 'function')
+      assert.strictEqual(typeof c.replylane.feeds.migrate, 'function')
+      assert.strictEqual(typeof c.replylane.export.markdown, 'function')
+      assert.strictEqual(typeof c.replylane.export.json, 'function')
+    })
+
+    it('replylane.opportunity.score calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ result: { score: 80 }, usage: { action: 'replylane.opportunity.score', credits: 15 } }), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.replylane.opportunity.score({ tweetText: 'test', authorHandle: 'builder', authorFollowers: 8000 })
+        assert.ok(capturedUrl.includes('/v1/replylane/opportunity/score'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('has signallane namespace', () => {
       const c = new Talocode()
       assert.ok(c.signallane)

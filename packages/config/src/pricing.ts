@@ -134,6 +134,17 @@ export const TALOCODE_CLOUD_PRICING = {
       "ugclane.report.generate": 40,
       "ugclane.export.markdown": 5,
       "ugclane.export.json": 5
+    },
+    replylane: {
+      "replylane.opportunity.score": 15,
+      "replylane.targets.rank": 25,
+      "replylane.replies.draft": 30,
+      "replylane.replies.risk": 20,
+      "replylane.posts.grok_check": 20,
+      "replylane.activity.audit": 35,
+      "replylane.feeds.migrate": 40,
+      "replylane.export.markdown": 5,
+      "replylane.export.json": 5,
     }
   }
 } as const

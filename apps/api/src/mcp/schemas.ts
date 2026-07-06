@@ -1007,6 +1007,141 @@ export const ugclaneExportJsonSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const replylaneOpportunityScoreSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    tweetText: { type: 'string', description: 'Tweet text to evaluate for reply opportunity' },
+    authorHandle: { type: 'string', description: 'Author handle without @' },
+    authorFollowers: { type: 'number', description: 'Author follower count' },
+    replyCount: { type: 'number', description: 'Current reply count on the tweet' },
+    ageMinutes: { type: 'number', description: 'Minutes since tweet was posted' },
+    yourFollowers: { type: 'number', description: 'Your follower count' },
+    yourNiche: { type: 'string', description: 'Your niche for topic matching' },
+    topicTags: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['tweetText', 'authorHandle', 'authorFollowers'],
+  additionalProperties: false,
+}
+
+export const replylaneTargetsRankSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    yourFollowers: { type: 'number', description: 'Your follower count' },
+    yourNiche: { type: 'string', description: 'Your niche' },
+    accounts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          handle: { type: 'string' },
+          followers: { type: 'number' },
+          niche: { type: 'string' },
+          avgRepliesPerPost: { type: 'number' },
+          postsPerWeek: { type: 'number' },
+        },
+        required: ['handle', 'followers'],
+      },
+    },
+  },
+  required: ['yourFollowers', 'accounts'],
+  additionalProperties: false,
+}
+
+export const replylaneRepliesDraftSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    tweetText: { type: 'string', description: 'Tweet to reply to' },
+    authorHandle: { type: 'string' },
+    yourNiche: { type: 'string' },
+    yourExperience: { type: 'string' },
+    replyTypes: { type: 'array', items: { type: 'string' } },
+    count: { type: 'number' },
+    maxLength: { type: 'number' },
+  },
+  required: ['tweetText'],
+  additionalProperties: false,
+}
+
+export const replylaneRepliesRiskSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    replyText: { type: 'string', description: 'Reply draft to check for deboost risk' },
+    targetHandle: { type: 'string' },
+    repliesLastHour: { type: 'number' },
+    repliesToSameAccountToday: { type: 'number' },
+    similarRepliesToday: { type: 'number' },
+    containsLink: { type: 'boolean' },
+  },
+  required: ['replyText'],
+  additionalProperties: false,
+}
+
+export const replylanePostsGrokCheckSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    postText: { type: 'string', description: 'Post or reply draft to check' },
+    isReply: { type: 'boolean' },
+    goal: { type: 'string' },
+  },
+  required: ['postText'],
+  additionalProperties: false,
+}
+
+export const replylaneActivityAuditSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    entries: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['post', 'reply'] },
+          handle: { type: 'string' },
+          timestamp: { type: 'string' },
+        },
+        required: ['type'],
+      },
+    },
+    periodDays: { type: 'number' },
+    targetRepliesPerDay: { type: 'number' },
+    targetPostsPerDay: { type: 'number' },
+  },
+  required: ['entries'],
+  additionalProperties: false,
+}
+
+export const replylaneFeedsMigrateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    communityName: { type: 'string' },
+    niche: { type: 'string' },
+    memberCount: { type: 'number' },
+    currentTopics: { type: 'array', items: { type: 'string' } },
+    goal: { type: 'string' },
+  },
+  additionalProperties: false,
+}
+
+export const replylaneExportMarkdownSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object' },
+    title: { type: 'string' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
+
+export const replylaneExportJsonSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object' },
+    title: { type: 'string' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
+
 export const skillsExportClaudeSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

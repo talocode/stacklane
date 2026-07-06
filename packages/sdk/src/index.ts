@@ -168,6 +168,7 @@ export { UGCLaneClient } from './ugclane.js'
 export { CrawlerLaneClient } from './crawlerlane.js'
 export { OpenSourceLaneClient } from './opensourcelane.js'
 export { ForgeCADClient } from './forgecad.js'
+export { ReplyLaneClient } from './replylane.js'
 export {
   CodraClientPlaceholder,
   TradiaClientPlaceholder,
