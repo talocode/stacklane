@@ -1,22 +1,16 @@
 # Talocode Cloud SDK
 
-Official package: `@talocode/sdk` (currently available as `@stacklane/sdk`)
+Official package: `@talocode/sdk`
 
 The Talocode Cloud SDK provides typed access to all Talocode product APIs through a single client.
-
-> **Not yet published to npm.** Package name prepared for `@talocode/sdk`. Currently available as `@stacklane/sdk` in the Stacklane monorepo.
 
 ## Installation
 
 ```bash
-npm install @stacklane/sdk   # current
-```
-
-When published, the canonical import will be:
-
-```bash
 npm install @talocode/sdk
 ```
+
+Monorepo development also uses `@stacklane/sdk` in `packages/sdk` (same implementation).
 
 ## Quick Start
 

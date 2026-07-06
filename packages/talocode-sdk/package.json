@@ -1,18 +1,49 @@
 {
   "name": "@talocode/sdk",
   "version": "0.1.0",
-  "description": "Talocode Cloud SDK — official programmable interface for Talocode products",
+  "description": "Talocode Cloud SDK — typed access to all Talocode product APIs through one client.",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
-    "test": "echo \"Tests run from @stacklane/sdk package\""
+    "build": "node scripts/prepare-publish.mjs",
+    "typecheck": "node scripts/prepare-publish.mjs",
+    "test": "npm run build",
+    "prepublishOnly": "npm run build && npm pack --dry-run",
+    "pack:dry": "npm pack --dry-run"
   },
-  "dependencies": {
-    "@stacklane/sdk": "workspace:*"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/talocode/stacklane.git",
+    "directory": "packages/talocode-sdk"
   },
-  "devDependencies": {
-    "typescript": "^5.7.3"
+  "homepage": "https://github.com/talocode/stacklane/tree/main/packages/talocode-sdk",
+  "bugs": {
+    "url": "https://github.com/talocode/stacklane/issues"
+  },
+  "keywords": [
+    "talocode",
+    "sdk",
+    "api",
+    "cloud",
+    "ai"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
