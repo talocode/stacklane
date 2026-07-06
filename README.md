@@ -61,3 +61,9 @@ Future adapters may support object storage, but v0.4.0 does not require cloud pr
 ## License
 
 MIT
+
+## Support
+
+Open-source Talocode products are built and maintained by Abdulmuiz Adeyemo.
+
+Sponsor the work: https://github.com/sponsors/Abdulmuiz44
