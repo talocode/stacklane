@@ -1,9 +1,12 @@
 {
   "name": "@talocode/sdk",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Talocode Cloud SDK — typed access to all Talocode product APIs through one client.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "talocode": "./bin/talocode.mjs"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,6 +17,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "README.md",
     "LICENSE"
   ],
