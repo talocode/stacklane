@@ -140,15 +140,6 @@ import {
 import {
   constructStripeWebhookEvent
 } from './services/payments/stripe-provider'
-import {
-  handleRouterRequest,
-  getModels,
-  getRouterHealth,
-  getRouterProviders,
-  authenticateTalocodeApiKey as routerAuthenticateKey
-} from './services/router/router'
-import { isCompressionEnabled } from './services/router/config'
-
 const SESSION_TTL_DAYS = 7
 const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS || 3000)
 const adapter = new MockProvisioningAdapter()
@@ -830,113 +821,6 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
         return
       }
       sendJson(res, 400, { error: { code: 'WEBHOOK_ERROR', message: 'Webhook processing failed.' } })
-    }
-    return
-  }
-
-  // ─── Talocode Cloud Router (API-key authenticated, before session check) ──
-
-  if (req.method === 'GET' && path === '/api/v1/cloud/router/health') {
-    const health = await getRouterHealth()
-    sendData(res, 200, health)
-    return
-  }
-
-  if (req.method === 'GET' && path === '/api/v1/cloud/router/providers') {
-    const providers = await getRouterProviders()
-    sendData(res, 200, providers)
-    return
-  }
-
-  if (req.method === 'GET' && (path === '/v1/models' || path === '/v1/router/models')) {
-    const models = await getModels()
-    sendData(res, 200, models)
-    return
-  }
-
-  if (req.method === 'POST' && (path === '/v1/chat/completions' || path === '/v1/router/chat/completions')) {
-    let rawKey: string
-    const authHeader = req.headers['authorization'] || ''
-    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
-      rawKey = authHeader.slice(7)
-    } else if (typeof req.headers['x-api-key'] === 'string') {
-      rawKey = req.headers['x-api-key'] as string
-    } else {
-      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
-    }
-
-    const body = await parseBody(req)
-    const model = typeof body.model === 'string' ? body.model.trim() : ''
-    if (!model) throw new HttpError(422, 'VALIDATION_ERROR', 'model is required.')
-    if (!Array.isArray(body.messages) || body.messages.length === 0) {
-      throw new HttpError(422, 'VALIDATION_ERROR', 'messages array is required and must not be empty.')
-    }
-    if (body.stream === true) {
-      throw new HttpError(422, 'STREAM_NOT_SUPPORTED', 'Streaming is not supported in v0.1. Use non-streaming requests.')
-    }
-
-    const messages = body.messages.map((m: unknown) => {
-      const msg = m as Record<string, unknown>
-      return { role: String(msg.role || ''), content: String(msg.content || '') }
-    })
-
-    const routerReq = {
-      model,
-      messages,
-      max_tokens: typeof body.max_tokens === 'number' ? body.max_tokens : undefined,
-      temperature: typeof body.temperature === 'number' ? body.temperature : undefined,
-      stream: false,
-      requestId: typeof body.requestId === 'string' ? body.requestId : undefined
-    }
-
-    try {
-      const result = await handleRouterRequest(rawKey, routerReq)
-
-      const wallet = await checkBalance(result.charge.projectId as string)
-
-      const headers: Record<string, string> = {
-        'x-talocode-request-id': result.charge.requestId,
-        'x-talocode-project-id': result.charge.projectId || '',
-        'x-talocode-provider': result.charge.provider,
-        'x-talocode-model': result.charge.model,
-        'x-talocode-credits-charged': String(result.charge.creditsCharged),
-        'x-talocode-wallet-balance': String(wallet.balanceCredits)
-      }
-
-      if (result.compressionApplied) {
-        headers['x-talocode-compression-applied'] = 'true'
-        headers['x-talocode-compression-saved-estimate'] = String(result.compressionSavedEstimate || 0)
-      }
-
-      res.writeHead(200, {
-        'content-type': 'application/json; charset=utf-8',
-        'access-control-allow-origin': '*',
-        'access-control-allow-methods': 'GET,POST,OPTIONS',
-        'access-control-allow-headers': 'content-type,authorization,x-api-key',
-        ...headers
-      })
-
-      res.end(JSON.stringify(result.response))
-    } catch (error: unknown) {
-      if (error instanceof HttpError) {
-        sendError(res, error)
-        return
-      }
-      const err = error as { statusCode?: number; code?: string; message?: string; required?: number; available?: number }
-      if (err.code === 'insufficient_credits' || err.code === 'insufficient_credits') {
-        sendJson(res, 402, {
-          error: {
-            code: 'insufficient_credits',
-            message: err.message || 'Insufficient Talocode Cloud credits.',
-            required: err.required || 0,
-            available: err.available || 0
-          }
-        })
-        return
-      }
-      const statusCode = err.statusCode || 500
-      const code = err.code || 'INTERNAL_ERROR'
-      sendJson(res, statusCode, { error: { code, message: err.message || 'Router error.' } })
     }
     return
   }

@@ -30,7 +30,7 @@ test('pricing config contains all required products', () => {
   const products = Object.keys(TALOCODE_CLOUD_PRICING.products)
   const expected = [
     'agent_browser', 'tera_context', 'talocode_reach',
-    'cliploop', 'signallane', 'tradia', 'codra', 'worklane', 'talocode_router'
+    'cliploop', 'signallane', 'tradia', 'codra', 'worklane'
   ]
   for (const p of expected) {
     assert.ok(products.includes(p), `Missing product: ${p}`)

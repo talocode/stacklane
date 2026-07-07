@@ -43,7 +43,6 @@ const talocode = new Talocode({
 | Namespace | Client Access | Status |
 |-----------|--------------|--------|
 | Tera | `talocode.tera.*` | Implemented |
-| Router | `talocode.router.*` | Implemented |
 | Agent Browser | `talocode.agentBrowser.*` | Implemented |
 | ClipLoop | `talocode.cliploop.*` | Implemented (typed, routes planned) |
 | Codra | `talocode.codra.*` | Implemented |
@@ -66,21 +65,6 @@ const review  = await talocode.tera.coding.review({ language, code, focus, stric
 const health       = await talocode.tera.health();
 const capabilities = await talocode.tera.capabilities();
 const pricing      = await talocode.tera.pricing();
-```
-
-## Router API
-
-```ts
-// Chat completion
-const chat = await talocode.router.chat({
-  model: "talocode/auto",
-  messages: [{ role: "user", content: "Hello" }],
-});
-
-// Info
-const models    = await talocode.router.models();
-const providers = await talocode.router.providers();
-const health    = await talocode.router.health();
 ```
 
 ## Agent Browser API
@@ -201,7 +185,6 @@ import { createStacklaneClient, Talocode } from "@stacklane/sdk";
 // Still works:
 const admin = createStacklaneClient({ baseUrl: "http://localhost:4000" });
 
-// New Talocode Cloud client:
 const cloud = new Talocode({ apiKey: process.env.TALOCODE_API_KEY });
-await cloud.router.chat({ model: "talocode/auto", messages: [] });
+await cloud.tera.rewrite({ text: "Improve this", style: "clear" });
 ```

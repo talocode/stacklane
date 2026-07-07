@@ -110,52 +110,6 @@
 }
 ```
 
----
-
-## Router Chat
-
-**Tool:** `router_chat`
-
-**Route:** `POST /v1/router/chat/completions`
-
-**Product:** `router` | **Action:** `chat.completions` | **Est. Credits:** Variable
-
-### Input Schema
-
-```json
-{
-  "type": "object",
-  "required": ["model", "messages"],
-  "properties": {
-    "model": { "type": "string" },
-    "messages": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["role", "content"],
-        "properties": {
-          "role": { "type": "string", "enum": ["user", "assistant", "system"] },
-          "content": { "type": "string" }
-        }
-      }
-    },
-    "max_tokens": { "type": "number" },
-    "temperature": { "type": "number" }
-  }
-}
-```
-
-### Example
-
-```json
-{
-  "model": "talocode/auto",
-  "messages": [{ "role": "user", "content": "Summarize this log" }]
-}
-```
-
----
-
 ## Agent Browser Check
 
 **Tool:** `agent_browser_check`

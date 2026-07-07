@@ -77,15 +77,6 @@ export const TALOCODE_CLOUD_PRICING = {
       "webdatalane.crawl.plan": 15,
       "webdatalane.screenshot": 50
     },
-    talocode_router: {
-      "chat.fast": 3,
-      "chat.auto": 5,
-      "chat.coding": 8,
-      "chat.completions": 2,
-      "compression.logs": 2,
-      "compression.diff": 2,
-      "compression.trace": 3
-    },
     skills: {
       "generate.github_profile": 80,
       "generate.github_repo": 100,

@@ -54,12 +54,6 @@ Each cloud project has a wallet with:
 | codra | task.large | 100 |
 | worklane | workflow.small | 10 |
 | worklane | workflow.large | 25 |
-| talocode_router | chat.fast | 2 |
-| talocode_router | chat.auto | 3 |
-| talocode_router | chat.coding | 5 |
-| talocode_router | compression.logs | 1 |
-| talocode_router | compression.diff | 1 |
-| talocode_router | compression.trace | 2 |
 
 ### Pricing Catalog
 
@@ -146,16 +140,7 @@ curl -s -X POST http://localhost:4000/api/v1/cloud/usage/charge \
 ```
 Response: `200 {"ok":true,"remainingCredits":98}` (2 credits deducted)
 
-### Step 5: Router chat completion
-```bash
-curl -s -X POST http://localhost:4000/v1/chat/completions \
-  -H 'Authorization: Bearer YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"talocode/auto","messages":[{"role":"user","content":"Hello"}]}'
-```
-Response: OpenAI-compatible response with `provider` field indicating which provider served the request. Credits pre-charged before provider call, delta-charged after response.
-
-### Step 6: View usage history
+### Step 5: View usage history
 ```bash
 curl -s http://localhost:4000/api/v1/cloud/projects/PROJECT_ID/usage \
   -b /tmp/demo-cookies.txt
@@ -174,9 +159,5 @@ Response: `402 {"ok":false,"error":"insufficient_credits","required":2,"availabl
 
 ### Smoke tests
 ```bash
-# Billing smoke test (9 checks)
 node scripts/smoke-cloud-billing.mjs
-
-# Router smoke test (15 checks)
-node scripts/smoke-cloud-router.mjs
 ```

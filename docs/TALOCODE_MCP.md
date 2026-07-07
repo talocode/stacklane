@@ -59,12 +59,6 @@ Talocode MCP v0.1 exposes **14 tools** across 5 product categories and 1 cloud u
 | `tera_coding_explain` | Explain code at any level | `POST /v1/tera/coding/explain` | 10 |
 | `tera_coding_review` | Review code for bugs/security/performance | `POST /v1/tera/coding/review` | 20 |
 
-### Router (AI Chat)
-
-| Tool | Description | Route | Est. Credits |
-|------|-------------|-------|-------------|
-| `router_chat` | Chat completion via Talocode router | `POST /v1/router/chat/completions` | Variable |
-
 ### Agent Browser
 
 | Tool | Description | Route | Est. Credits |

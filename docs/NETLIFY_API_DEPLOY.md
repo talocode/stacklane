@@ -26,7 +26,6 @@ The function loads the compiled API handler from `apps/api/dist/server.js`.
 |-------------|-------------|---------|
 | Skills API | `/v1/skills/*` | Per action (credits) |
 | Agent Browser API | `/v1/agent-browser/*` | Per action (credits) |
-| Router | `/v1/router/*` | Per request + tokens |
 | MCP | `/mcp` | Proxies to product APIs |
 | Cloud billing | `/api/v1/cloud/*` | Wallet + Stripe |
 
@@ -59,7 +58,7 @@ Set in Netlify → Site settings → Environment variables (see `apps/api/.env.n
 | `TALOCODE_MCP_URL` | Yes | `https://api.talocode.site/mcp` |
 | `STRIPE_SECRET_KEY` | For billing | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | For billing | Stripe webhook signing secret |
-| `OPENROUTER_API_KEY` or `OPENAI_API_KEY` | For router | At least one LLM provider |
+| `MISTRAL_API_KEY` | For Tera API | Mistral AI provider |
 | `GITHUB_TOKEN` | Optional | Richer Skills API data |
 | `AGENT_BROWSER_SERVICE_URL` | Optional | Playwright host for screenshots/full browser checks |
 
@@ -99,7 +98,6 @@ netlify build && netlify deploy --prod --dir=apps/api/dist --functions=netlify/f
 | `POST /v1/agent-browser/evidence` | Page evidence capture |
 | `POST /v1/agent-browser/trace-report` | Deploy validation trace |
 | `GET /v1/agent-browser/health` | Agent Browser health |
-| `POST /v1/router/chat/completions` | Chat completions |
 | `POST /mcp` | Model Context Protocol endpoint |
 | `POST /api/v1/cloud/billing/stripe/webhook` | Stripe webhook |
 
@@ -149,6 +147,6 @@ TALOCODE_BASE_URL=https://api.talocode.site \
 |---------|-------|-----|
 | 502 on all routes | Function failed to load | Check build output in `apps/api/dist` |
 | DB errors | Missing or wrong `DATABASE_URL` | Use pooled connection string |
-| Router 500 | No LLM keys | Set `OPENROUTER_API_KEY` or `OPENAI_API_KEY` |
+| Tera API 500 | No Mistral key | Set `MISTRAL_API_KEY` |
 | Screenshot 503 | No Playwright on Netlify | Set `AGENT_BROWSER_SERVICE_URL` |
 | Stripe webhook fails | Wrong secret | Match `STRIPE_WEBHOOK_SECRET` to Stripe dashboard |

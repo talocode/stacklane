@@ -50,29 +50,6 @@ export const teraCodingReviewSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
-export const routerChatSchema: McpToolInputSchema = {
-  type: 'object',
-  properties: {
-    model: { type: 'string', description: 'Model to use (e.g. talocode/auto, talocode/fast, talocode/coding)' },
-    messages: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          role: { type: 'string', enum: ['user', 'assistant', 'system'] },
-          content: { type: 'string' },
-        },
-        required: ['role', 'content'],
-      },
-      description: 'Chat messages',
-    },
-    max_tokens: { type: 'number', description: 'Maximum tokens in response' },
-    temperature: { type: 'number', description: 'Sampling temperature (0-2)' },
-  },
-  required: ['model', 'messages'],
-  additionalProperties: false,
-}
-
 export const agentBrowserCheckSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

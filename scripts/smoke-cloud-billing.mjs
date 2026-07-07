@@ -38,8 +38,6 @@ console.log('=== Billing Smoke ===')
 
 // 1. Pricing
 const pricing = curl('GET', '/api/v1/cloud/pricing')
-check('pricing has talocode_router', pricing?.data?.products?.talocode_router != null)
-
 // 2. Login
 curl('POST', '/auth/login', { data: { email: EMAIL, password: PASSWORD }, cookie: true })
 const me = curl('GET', '/auth/me', { cookie: true })

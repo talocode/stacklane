@@ -58,15 +58,6 @@ describe('Talocode SDK', () => {
       assert.strictEqual(typeof c.tera.pricing, 'function')
     })
 
-    it('has router namespace', () => {
-      const c = new Talocode()
-      assert.ok(c.router)
-      assert.strictEqual(typeof c.router.chat, 'function')
-      assert.strictEqual(typeof c.router.models, 'function')
-      assert.strictEqual(typeof c.router.providers, 'function')
-      assert.strictEqual(typeof c.router.health, 'function')
-    })
-
     it('has agentBrowser namespace', () => {
       const c = new Talocode()
       assert.ok(c.agentBrowser)
@@ -929,21 +920,6 @@ describe('Talocode SDK', () => {
       }
     })
 
-    it('router.chat uses /v1/router/chat/completions', async () => {
-      let capturedUrl = ''
-      const origFetch = globalThis.fetch
-      globalThis.fetch = async (url: RequestInfo | URL) => {
-        capturedUrl = typeof url === 'string' ? url : url.toString()
-        return new Response(JSON.stringify({ id: 'chat', object: 'chat.completion', created: 1, model: 'test', provider: 'mock', choices: [], usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 } }), { status: 200, headers: { 'content-type': 'application/json' } })
-      }
-      try {
-        await c.router.chat({ model: 'test', messages: [{ role: 'user', content: 'hi' }] })
-        assert.ok(capturedUrl.includes('/v1/router/chat/completions'))
-      } finally {
-        globalThis.fetch = origFetch
-      }
-    })
-
     it('cliploop.brief uses /v1/cliploop/brief/generate', async () => {
       let capturedUrl = ''
       const origFetch = globalThis.fetch
@@ -1142,7 +1118,7 @@ describe('error handling', () => {
       }
       try {
         const c = new Talocode({ apiKey: 'test' })
-        await c.router.models()
+        await c.tera.rewrite({ text: 'test', style: 'clear' })
         assert.fail('Should have thrown')
       } catch (err) {
         assert.ok(err instanceof TalocodeRateLimitError)

@@ -1,5 +1,4 @@
 import { TeraClient } from './tera'
-import { RouterClient } from './router'
 import { AgentBrowserClient } from './agent-browser'
 import { ClipLoopClient } from './cliploop'
 import { CodraClient } from './codra'
@@ -30,7 +29,6 @@ const DEFAULT_TIMEOUT_MS = 30000
 
 export class TalocodeApiClient {
   public tera: TeraClient
-  public router: RouterClient
   public agentBrowser: AgentBrowserClient
   public cliploop: ClipLoopClient
   public codra: CodraClient
@@ -60,7 +58,6 @@ export class TalocodeApiClient {
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
     this.tera = new TeraClient(this.baseUrl, this.apiKey, this.timeoutMs)
-    this.router = new RouterClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.agentBrowser = new AgentBrowserClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.cliploop = new ClipLoopClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.codra = new CodraClient(this.baseUrl, this.apiKey, this.timeoutMs)

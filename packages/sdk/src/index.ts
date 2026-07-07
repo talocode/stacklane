@@ -156,7 +156,6 @@ export type StacklaneClient = ReturnType<typeof createStacklaneClient>;
 export { Talocode } from './talocode'
 export type { TalocodeOptions } from './talocode'
 export { TeraClient } from './tera'
-export { RouterClient } from './router'
 export { AgentBrowserClient } from './agent-browser'
 export { ClipLoopClient } from './cliploop'
 export { CodraClient } from './codra'

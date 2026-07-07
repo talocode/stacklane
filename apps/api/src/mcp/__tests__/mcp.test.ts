@@ -53,12 +53,6 @@ describe('Talocode MCP v0.1', () => {
       assert.ok(tool.inputSchema.required?.includes('text'))
     })
 
-    it('router_chat requires model and messages', () => {
-      const tool = TOOL_MAP.get('router_chat')!
-      assert.ok(tool.inputSchema.required?.includes('model'))
-      assert.ok(tool.inputSchema.required?.includes('messages'))
-    })
-
     it('agent_browser_check requires url', () => {
       const tool = TOOL_MAP.get('agent_browser_check')!
       assert.ok(tool.inputSchema.required?.includes('url'))
@@ -258,11 +252,6 @@ describe('Talocode MCP v0.1', () => {
       assert.strictEqual(tool.method, 'POST')
     })
 
-    it('router_chat maps to /v1/router/chat/completions', () => {
-      const tool = TOOL_MAP.get('router_chat')!
-      assert.strictEqual(tool.route, '/v1/router/chat/completions')
-    })
-
     it('agent_browser_check maps to /v1/agent-browser/check', () => {
       const tool = TOOL_MAP.get('agent_browser_check')!
       assert.strictEqual(tool.route, '/v1/agent-browser/check')
@@ -317,9 +306,9 @@ describe('Talocode MCP v0.1', () => {
     })
 
     it('POST tools have body in callTool', () => {
-      const tool = TOOL_MAP.get('router_chat')!
-      const body = tool.method === 'POST' ? { model: 'test' } : undefined
-      assert.deepStrictEqual(body, { model: 'test' })
+      const tool = TOOL_MAP.get('invoicelane_extract')!
+      const body = tool.method === 'POST' ? { text: 'test' } : undefined
+      assert.deepStrictEqual(body, { text: 'test' })
     })
 
     it('invoicelane tools reference correct routes', () => {
