@@ -29,6 +29,8 @@ export default function PlansPage() {
   const defaultPricing: CloudPricingTier[] = [
     { action: 'agent_browser.check', product: 'Agent Browser', credits: 1, description: 'Run a browser check on a URL' },
     { action: 'agent_browser.screenshot', product: 'Agent Browser', credits: 1, description: 'Capture a screenshot of a URL' },
+    { action: 'agent_browser.extract', product: 'Agent Browser', credits: 15, description: 'Extract structured content from a URL' },
+    { action: 'agent_browser.analyze', product: 'Agent Browser', credits: 25, description: 'Analyze page content with AI' },
     { action: 'agent_browser.session.create', product: 'Agent Browser', credits: 2, description: 'Create a persistent browser session' },
     { action: 'agent_browser.session.report', product: 'Agent Browser', credits: 1, description: 'Generate a session report' },
     { action: 'agent_browser.session.close', product: 'Agent Browser', credits: 0, description: 'Close a session (free)' },

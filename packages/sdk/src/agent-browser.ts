@@ -6,6 +6,10 @@ import type {
   AgentBrowserScreenshotResult,
   AgentBrowserTraceReportInput,
   AgentBrowserTraceReportResult,
+  AgentBrowserExtractInput,
+  AgentBrowserExtractResult,
+  AgentBrowserAnalyzeInput,
+  AgentBrowserAnalyzeResult,
 } from './types'
 
 export class AgentBrowserClient {
@@ -45,5 +49,21 @@ export class AgentBrowserClient {
       body: input,
       timeoutMs: this.timeoutMs,
     }) as Promise<AgentBrowserTraceReportResult>
+  }
+
+  async extract(input: AgentBrowserExtractInput): Promise<AgentBrowserExtractResult> {
+    return request(this.baseUrl, this.getNamespacePath('/extract'), this.apiKey, {
+      method: 'POST',
+      body: input,
+      timeoutMs: this.timeoutMs,
+    }) as Promise<AgentBrowserExtractResult>
+  }
+
+  async analyze(input: AgentBrowserAnalyzeInput): Promise<AgentBrowserAnalyzeResult> {
+    return request(this.baseUrl, this.getNamespacePath('/analyze'), this.apiKey, {
+      method: 'POST',
+      body: input,
+      timeoutMs: this.timeoutMs,
+    }) as Promise<AgentBrowserAnalyzeResult>
   }
 }

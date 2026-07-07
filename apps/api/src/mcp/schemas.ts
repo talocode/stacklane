@@ -121,6 +121,33 @@ export const agentBrowserTraceReportSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const agentBrowserExtractSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to extract content from' },
+    includeImages: { type: 'boolean', description: 'Include images from page (default: true)' },
+    includeLinks: { type: 'boolean', description: 'Include links from page (default: true)' },
+    maxTextLength: { type: 'number', description: 'Maximum text content length (default: 50000)' },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const agentBrowserAnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: { type: 'string', description: 'URL to analyze' },
+    analysis: {
+      type: 'array',
+      items: { type: 'string', enum: ['summary', 'sentiment', 'entities', 'topics', 'keywords'] },
+      description: 'Types of analysis to perform (default: all)',
+    },
+    maxTextLength: { type: 'number', description: 'Maximum text to analyze (default: 8000)' },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
 export const cliploopBriefGenerateSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

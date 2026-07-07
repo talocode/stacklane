@@ -575,12 +575,14 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     if (req.method === 'GET' && path === '/v1/agent-browser/health') {
       sendData(res, 200, {
         status: 'ok',
-        version: '0.1.0',
+        version: '0.2.0',
         mode: process.env.AGENT_BROWSER_SERVICE_URL ? 'proxy' : 'http',
         endpoints: [
           'POST /v1/agent-browser/check',
           'POST /v1/agent-browser/screenshot',
           'POST /v1/agent-browser/evidence',
+          'POST /v1/agent-browser/extract',
+          'POST /v1/agent-browser/analyze',
           'POST /v1/agent-browser/trace-report',
           'GET /v1/agent-browser/health',
         ],
@@ -590,12 +592,14 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
     if (req.method === 'POST') {
       const body = await parseBody(req)
-      const {
-        runBrowserCheck,
-        runBrowserScreenshot,
-        runBrowserEvidence,
-        runBrowserTraceReport,
-      } = await import('./services/agent-browser.js')
+        const {
+          runBrowserCheck,
+          runBrowserScreenshot,
+          runBrowserEvidence,
+          runBrowserTraceReport,
+          runBrowserExtract,
+          runBrowserAnalyze,
+        } = await import('./services/agent-browser.js')
 
       if (path === '/v1/agent-browser/check') {
         const url = typeof body.url === 'string' ? body.url.trim() : ''
@@ -717,6 +721,67 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
           sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'agent_browser.browser.trace_report' } })
         } catch (error) {
           throw new HttpError(422, 'BROWSER_ERROR', error instanceof Error ? error.message : 'Trace report failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/agent-browser/extract') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'agent_browser',
+          action: 'browser.extract',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await runBrowserExtract({
+            url,
+            includeImages: body.includeImages !== false,
+            includeLinks: body.includeLinks !== false,
+            maxTextLength: typeof body.maxTextLength === 'number' ? body.maxTextLength : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'agent_browser.browser.extract' } })
+        } catch (error) {
+          throw new HttpError(422, 'EXTRACT_ERROR', error instanceof Error ? error.message : 'Content extraction failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/agent-browser/analyze') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'agent_browser',
+          action: 'browser.analyze',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await runBrowserAnalyze({
+            url,
+            analysis: Array.isArray(body.analysis) ? body.analysis : undefined,
+            maxTextLength: typeof body.maxTextLength === 'number' ? body.maxTextLength : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'agent_browser.browser.analyze' } })
+        } catch (error) {
+          throw new HttpError(422, 'ANALYZE_ERROR', error instanceof Error ? error.message : 'Content analysis failed.')
         }
         return
       }

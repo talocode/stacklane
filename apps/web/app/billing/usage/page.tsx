@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react'
 import { PageScaffold, Panel } from '@/components/app-shell'
 import { apiClient, formatTimestamp } from '@/lib/api-client'
 import type { CloudUsageEvent, CloudTransaction } from '@/lib/api-types'
-import { Zap, Eye, Camera, Globe, FileText, Layers, ArrowUpLeft, ArrowDownLeft } from 'lucide-react'
+import { Zap, Eye, Camera, Globe, FileText, Layers, Search, BrainCircuit, ArrowUpLeft, ArrowDownLeft } from 'lucide-react'
 
 const actionIcons: Record<string, React.ComponentType<{ size?: number; style?: React.CSSProperties }>> = {
   'agent_browser.check': Zap,
   'agent_browser.screenshot': Camera,
+  'agent_browser.extract': Search,
+  'agent_browser.analyze': BrainCircuit,
   'agent_browser.session.create': Layers,
   'agent_browser.session.report': FileText,
   'agent_browser.session.close': Globe,

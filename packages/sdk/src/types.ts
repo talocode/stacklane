@@ -238,6 +238,52 @@ export interface AgentBrowserTraceReportResult {
   reportUrl?: string
 }
 
+export interface AgentBrowserExtractInput {
+  url: string
+  includeImages?: boolean
+  includeLinks?: boolean
+  maxTextLength?: number
+}
+
+export interface AgentBrowserExtractResult {
+  url: string
+  finalUrl?: string
+  title: string | null
+  description: string | null
+  language: string | null
+  canonical: string | null
+  ogImage: string | null
+  ogType: string | null
+  headings: { level: number; text: string }[]
+  textContent: string
+  links?: { href: string; text: string }[]
+  images?: { src: string; alt: string }[]
+  wordCount: number
+  durationMs: number
+}
+
+export interface AgentBrowserAnalyzeInput {
+  url: string
+  analysis?: ('summary' | 'sentiment' | 'entities' | 'topics' | 'keywords')[]
+  maxTextLength?: number
+}
+
+export interface AgentBrowserAnalyzeResult {
+  url: string
+  title: string | null
+  description: string | null
+  wordCount: number
+  analysis: {
+    summary?: string
+    sentiment?: 'positive' | 'negative' | 'neutral' | 'mixed'
+    entities?: { name: string; type: string }[]
+    topics?: string[]
+    keywords?: string[]
+  }
+  durationMs: number
+  note?: string
+}
+
 // ─── ClipLoop API ───
 
 export interface ClipLoopBriefInput {

@@ -7,6 +7,8 @@ export const TALOCODE_CLOUD_PRICING = {
       "browser.check": 5,
       "browser.screenshot": 8,
       "browser.evidence": 8,
+      "browser.extract": 15,
+      "browser.analyze": 25,
       "browser.trace_report": 15
     },
     tera_context: {
