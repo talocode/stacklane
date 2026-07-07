@@ -592,14 +592,14 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
     if (req.method === 'POST') {
       const body = await parseBody(req)
-        const {
-          runBrowserCheck,
-          runBrowserScreenshot,
-          runBrowserEvidence,
-          runBrowserTraceReport,
-          runBrowserExtract,
-          runBrowserAnalyze,
-        } = await import('./services/agent-browser.js')
+      const {
+        runBrowserCheck,
+        runBrowserScreenshot,
+        runBrowserEvidence,
+        runBrowserTraceReport,
+        runBrowserExtract,
+        runBrowserAnalyze,
+      } = await import('./services/agent-browser.js')
 
       if (path === '/v1/agent-browser/check') {
         const url = typeof body.url === 'string' ? body.url.trim() : ''
