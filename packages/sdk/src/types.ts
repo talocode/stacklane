@@ -78,6 +78,27 @@ export interface TeraReviewIssue {
   suggestion?: string
 }
 
+export interface TeraWriteInput {
+  language: string
+  task: string
+  context?: string
+  style?: string
+  generateTests?: boolean
+}
+
+export interface TeraWriteFile {
+  name: string
+  code: string
+}
+
+export interface TeraWriteResult {
+  code: string
+  explanation: string
+  language: string
+  files: TeraWriteFile[]
+  testCode: string | null
+}
+
 export interface TeraCapabilityEntry {
   id: string
   object: string

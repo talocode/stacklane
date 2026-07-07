@@ -8,6 +8,8 @@ import type {
   TeraExplainResult,
   TeraReviewInput,
   TeraReviewResult,
+  TeraWriteInput,
+  TeraWriteResult,
   TeraSuccessResponse,
   TeraListResponse,
   TeraCapabilityEntry,
@@ -60,6 +62,14 @@ export class TeraClient {
       body: input,
       timeoutMs: this.timeoutMs,
     }) as Promise<TeraSuccessResponse<TeraReviewResult>>
+  }
+
+  async write(input: TeraWriteInput): Promise<TeraSuccessResponse<TeraWriteResult>> {
+    return request(this.baseUrl, this.getNamespacePath('/coding/write'), this.apiKey, {
+      method: 'POST',
+      body: input,
+      timeoutMs: this.timeoutMs,
+    }) as Promise<TeraSuccessResponse<TeraWriteResult>>
   }
 
   async health(): Promise<TeraHealthResponse> {
