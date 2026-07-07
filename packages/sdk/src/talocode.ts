@@ -12,9 +12,9 @@ import { CrawlerLaneClient } from './crawlerlane'
 import { OpenSourceLaneClient } from './opensourcelane'
 import { ForgeCADClient } from './forgecad'
 import { ReplyLaneClient } from './replylane'
+import { TradiaClient } from './tradia'
 import { request } from './request'
 import {
-  TradiaClientPlaceholder,
   WorkLaneClientPlaceholder,
 } from './placeholders'
 
@@ -42,7 +42,7 @@ export class TalocodeApiClient {
   public opensourcelane: OpenSourceLaneClient
   public forgecad: ForgeCADClient
   public replylane: ReplyLaneClient
-  public tradia: TradiaClientPlaceholder
+  public tradia: TradiaClient
   public worklane: WorkLaneClientPlaceholder
   public baseUrl: string
   public apiKey: string | undefined
@@ -72,7 +72,7 @@ export class TalocodeApiClient {
     this.opensourcelane = new OpenSourceLaneClient(this)
     this.forgecad = new ForgeCADClient(this)
     this.replylane = new ReplyLaneClient(this)
-    this.tradia = new TradiaClientPlaceholder()
+    this.tradia = new TradiaClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.worklane = new WorkLaneClientPlaceholder()
   }
 

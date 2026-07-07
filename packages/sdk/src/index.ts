@@ -169,9 +169,9 @@ export { CrawlerLaneClient } from './crawlerlane.js'
 export { OpenSourceLaneClient } from './opensourcelane.js'
 export { ForgeCADClient } from './forgecad.js'
 export { ReplyLaneClient } from './replylane.js'
+export { TradiaClient } from './tradia'
 export {
   CodraClientPlaceholder,
-  TradiaClientPlaceholder,
   WorkLaneClientPlaceholder,
 } from './placeholders'
 export {

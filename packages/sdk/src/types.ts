@@ -462,3 +462,18 @@ export interface SkillsHealthResponse {
   version: string
   endpoints: string[]
 }
+
+// ─── Tradia API ───
+
+export interface TradiaHealthResponse {
+  status: string
+  version: string
+  endpoints: string[]
+}
+
+export interface TradiaSuccessResponse {
+  id: string
+  object: string
+  result: unknown
+  usage: UsageMeta
+}

@@ -41,10 +41,19 @@ export const TALOCODE_CLOUD_PRICING = {
       "signallane.x.report": 60
     },
     tradia: {
-      "trade.import": 3,
-      "performance.analyze": 20,
-      "risk.report": 35,
-      "behavior.report": 35
+      "tradia.agent.plan": 40,
+      "tradia.market.analyze": 30,
+      "tradia.signal.evaluate": 30,
+      "tradia.risk.check": 20,
+      "tradia.trade.propose": 40,
+      "tradia.trade.journal": 25,
+      "tradia.portfolio.report": 50,
+      "tradia.performance.analyze": 35,
+      "tradia.public_update.generate": 30,
+      "tradia.backtest.simulate": 60,
+      "tradia.accountability.card": 25,
+      "tradia.export.markdown": 5,
+      "tradia.export.json": 5,
     },
     codra: {
       "repo.summary": 50,

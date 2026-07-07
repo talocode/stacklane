@@ -1161,3 +1161,235 @@ export const skillsExportClaudeSchema: McpToolInputSchema = {
   required: ['skill'],
   additionalProperties: false,
 }
+
+export const tradiaHealthSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const tradiaAgentPlanSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    goal: { type: 'string', description: 'Trading goal (e.g. grow, preserve, income, learn)' },
+    accountSize: { type: 'number', description: 'Account size in base currency' },
+    riskTolerance: { type: 'string', enum: ['low', 'medium', 'high'], description: 'Risk tolerance level' },
+    markets: { type: 'array', items: { type: 'string' }, description: 'Markets to trade (e.g. forex, crypto, stocks)' },
+    timeframe: { type: 'string', description: 'Trading timeframe (e.g. day, swing, position)' },
+    experience: { type: 'string', description: 'Experience level (e.g. beginner, intermediate, advanced)' },
+    constraints: { type: 'array', items: { type: 'string' }, description: 'Trading constraints' },
+  },
+  required: ['goal'],
+  additionalProperties: false,
+}
+
+export const tradiaMarketAnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    market: { type: 'string', description: 'Market or asset to analyze (e.g. BTC/USD, EUR/USD)' },
+    timeframe: { type: 'string', description: 'Analysis timeframe' },
+    indicators: { type: 'array', items: { type: 'string' }, description: 'Indicators to include' },
+  },
+  required: ['market'],
+  additionalProperties: false,
+}
+
+export const tradiaSignalEvaluateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    signal: { type: 'string', description: 'Trading signal or setup description' },
+    market: { type: 'string', description: 'Market context' },
+    confidence: { type: 'number', description: 'Signal confidence (0-100)' },
+    timeframe: { type: 'string', description: 'Signal timeframe' },
+  },
+  required: ['signal'],
+  additionalProperties: false,
+}
+
+export const tradiaRiskCheckSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    trade: { type: 'string', description: 'Trade setup description' },
+    entryPrice: { type: 'number', description: 'Entry price' },
+    stopLoss: { type: 'number', description: 'Stop loss price' },
+    takeProfit: { type: 'number', description: 'Take profit price' },
+    positionSize: { type: 'number', description: 'Position size in units' },
+    accountSize: { type: 'number', description: 'Account size' },
+    riskPercent: { type: 'number', description: 'Risk per trade as percentage of account' },
+  },
+  required: ['trade', 'entryPrice', 'stopLoss', 'accountSize'],
+  additionalProperties: false,
+}
+
+export const tradiaTradeProposeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    market: { type: 'string', description: 'Market or asset to trade' },
+    direction: { type: 'string', enum: ['long', 'short'], description: 'Trade direction' },
+    entryPrice: { type: 'number', description: 'Proposed entry price' },
+    stopLoss: { type: 'number', description: 'Stop loss price' },
+    takeProfit: { type: 'number', description: 'Take profit price' },
+    positionSize: { type: 'number', description: 'Position size' },
+    rationale: { type: 'string', description: 'Trade rationale' },
+  },
+  required: ['market', 'direction'],
+  additionalProperties: false,
+}
+
+export const tradiaTradeJournalSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    tradeId: { type: 'string', description: 'Trade identifier' },
+    market: { type: 'string', description: 'Market traded' },
+    direction: { type: 'string', enum: ['long', 'short'], description: 'Trade direction' },
+    entryPrice: { type: 'number', description: 'Entry price' },
+    exitPrice: { type: 'number', description: 'Exit price' },
+    quantity: { type: 'number', description: 'Quantity traded' },
+    entryDate: { type: 'string', description: 'Entry date (ISO format)' },
+    exitDate: { type: 'string', description: 'Exit date (ISO format)' },
+    pnl: { type: 'number', description: 'Profit/loss in base currency' },
+    pnlPercent: { type: 'number', description: 'Profit/loss percentage' },
+    tags: { type: 'array', items: { type: 'string' }, description: 'Tags for categorization' },
+    notes: { type: 'string', description: 'Trade notes and reflections' },
+    emotion: { type: 'string', description: 'Emotional state during trade' },
+    mistake: { type: 'string', description: 'Any mistake made' },
+    lesson: { type: 'string', description: 'Lesson learned' },
+  },
+  additionalProperties: false,
+}
+
+export const tradiaPortfolioReportSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    assets: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          symbol: { type: 'string' },
+          allocation: { type: 'number' },
+          value: { type: 'number' },
+        },
+        required: ['symbol', 'allocation'],
+      },
+      description: 'Current portfolio holdings',
+    },
+    period: { type: 'string', description: 'Report period (e.g. 1m, 3m, 1y)' },
+    benchmark: { type: 'string', description: 'Benchmark index' },
+  },
+  required: ['assets'],
+  additionalProperties: false,
+}
+
+export const tradiaPerformanceAnalyzeSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    trades: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          pnl: { type: 'number' },
+          pnlPercent: { type: 'number' },
+          direction: { type: 'string' },
+          market: { type: 'string' },
+          date: { type: 'string' },
+        },
+        required: ['pnl'],
+      },
+      description: 'List of closed trades',
+    },
+    period: { type: 'string', description: 'Analysis period' },
+    benchmark: { type: 'string', description: 'Benchmark for comparison' },
+  },
+  required: ['trades'],
+  additionalProperties: false,
+}
+
+export const tradiaPublicUpdateGenerateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    trades: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          market: { type: 'string' },
+          direction: { type: 'string' },
+          pnlPercent: { type: 'number' },
+          date: { type: 'string' },
+        },
+        required: ['market', 'direction'],
+      },
+      description: 'Trades to include in update',
+    },
+    style: { type: 'string', enum: ['professional', 'casual', 'educational'], description: 'Update style' },
+    platform: { type: 'string', description: 'Target platform (e.g. twitter, linkedin)' },
+    includeMetrics: { type: 'boolean', description: 'Include performance metrics' },
+    maxLength: { type: 'number', description: 'Maximum output length' },
+  },
+  required: ['trades'],
+  additionalProperties: false,
+}
+
+export const tradiaBacktestSimulateSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    strategy: { type: 'string', description: 'Strategy description or rules' },
+    market: { type: 'string', description: 'Market to backtest' },
+    startDate: { type: 'string', description: 'Start date (ISO format)' },
+    endDate: { type: 'string', description: 'End date (ISO format)' },
+    initialCapital: { type: 'number', description: 'Initial capital' },
+    parameters: { type: 'object', description: 'Strategy parameters' },
+  },
+  required: ['strategy', 'market'],
+  additionalProperties: false,
+}
+
+export const tradiaAccountabilityCardSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    trades: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          pnl: { type: 'number' },
+          pnlPercent: { type: 'number' },
+          direction: { type: 'string' },
+          market: { type: 'string' },
+          followedPlan: { type: 'boolean' },
+          mistake: { type: 'string' },
+          lesson: { type: 'string' },
+        },
+        required: ['pnl'],
+      },
+      description: 'Trades for accountability review',
+    },
+    period: { type: 'string', description: 'Review period' },
+    goals: { type: 'array', items: { type: 'string' }, description: 'Trading goals' },
+  },
+  required: ['trades'],
+  additionalProperties: false,
+}
+
+export const tradiaExportMarkdownSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object', description: 'Tradia data to export' },
+    title: { type: 'string', description: 'Document title' },
+    sections: { type: 'array', items: { type: 'string' }, description: 'Sections to include' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
+
+export const tradiaExportJsonSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    data: { type: 'object', description: 'Tradia data to export' },
+    format: { type: 'string', enum: ['pretty', 'compact'], description: 'JSON output format' },
+  },
+  required: ['data'],
+  additionalProperties: false,
+}
