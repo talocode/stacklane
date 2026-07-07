@@ -1,39 +1,46 @@
 # Stacklane
 
-Stacklane is a lightweight backend/database/API layer for Talocode products.
+Stacklane is the Talocode backend cloud/control plane — API keys, customers, wallet credits, usage metering, billing, and hosted API infrastructure for all Talocode products.
 
-## Earlier Versions
+## Features
 
-- v0.1.0: core API, access tokens, database connection storage, audit events, health endpoint
-- v0.2.0: CLI, SDK, env generation, backup flow, token verification
+- **API Keys** — `sk_lane_dev_...` and `sk_lane_live_...`, hashed at rest, shown once at creation
+- **Customers** — Local customer management with `.stacklane/customers.json`
+- **Usage Metering** — Event tracking and usage summaries
+- **Billing** — Credit-based billing for Talocode product APIs
+- **Asset Management** — Metadata records and local file storage under `.stacklane/files/`
+- **Audit Events** — Security-relevant event logging
+- **Health** — `/health` endpoint
 
-## v0.4.0
+## Packages
 
-Stacklane v0.4.0 is local-first.
+| Package | Description |
+|---------|-------------|
+| `@talocode/sdk` | Unified TypeScript SDK — TradiaClient, TeraClient, ClipLoopClient, and more |
+| `@talocode/mcp` | MCP bridge for AI agent integration (Claude Code, Cursor, OpenCode, Codex) |
+| `apps/api` | REST API server with hosted routes + billing |
 
-- No external platform dependency
-- No Supabase dependency
-- No Resend dependency
-- No billing yet
-- API keys are hashed before storage
-- Raw API keys are shown only once at creation
-- File storage is local under `.stacklane/files/`
+## SDK
 
-## Local Storage
+```typescript
+import { TradiaClient } from '@talocode/sdk'
 
-- `.stacklane/customers.json`
-- `.stacklane/api-keys.json`
-- `.stacklane/usage-events.json`
-- `.stacklane/assets.json`
-- `.stacklane/files/`
+const tradia = new TradiaClient({
+  apiKey: process.env.TALOCODE_API_KEY,
+  useCloud: true,
+})
 
-## New v0.4.0 Primitives
+const proposal = await tradia.trade.propose({
+  symbol: 'XAUUSD',
+  market: 'forex',
+  accountBalance: 500,
+  riskPercent: 0.5,
+})
+```
 
-- API customers
-- API keys with `sk_lane_dev_...` and `sk_lane_live_...`
-- Usage events and summaries
-- Asset metadata records
-- Local file persistence for hosted API workflows
+## MCP
+
+MCP tools expose Talocode products (Tradia, Tera, ClipLoop, etc.) as agent-callable tools. See [`@talocode/mcp`](packages/talocode-mcp/README.md).
 
 ## Docs
 
@@ -41,22 +48,16 @@ Stacklane v0.4.0 is local-first.
 - `docs/SDK.md`
 - `docs/CLI.md`
 - `docs/MCP.md`
+- `docs/PLAN.md`
+- `docs/ARCHITECTURE.md`
 - `docs/STORAGE_AND_USAGE.md`
 - `docs/SECURITY.md`
 - `docs/TALOCODE_INTEGRATION.md`
+- `docs/TALOCODE_MCP_BRIDGE.md`
 
-## MCP
+## Local-First
 
-Stacklane MCP v0.1 exposes Stacklane primitives as MCP tools for Codex, Claude Code, OpenCode, Cursor, and other MCP-compatible agents. Local-first, stdio transport, no cloud account required. See [docs/MCP.md](docs/MCP.md).
-
-```bash
-pnpm --filter @stacklane/mcp build
-node scripts/test-stacklane-mcp-v010.mjs
-```
-
-## Status
-
-Future adapters may support object storage, but v0.4.0 does not require cloud provisioning or any external platform.
+Stacklane runs fully local. No external platform dependencies. Data is persisted under `.stacklane/`.
 
 ## License
 
