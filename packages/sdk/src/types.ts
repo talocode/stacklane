@@ -298,6 +298,20 @@ export interface ClipLoopCampaignResult {
   videos: string[]
 }
 
+export interface ClipLoopVideoStatusResult {
+  id: string
+  status: 'processing' | 'completed' | 'failed'
+  videoUrl: string | null
+  thumbnailUrl: string | null
+  error?: string
+}
+
+export interface ClipLoopVideoDownloadResult {
+  url: string
+  filename: string
+  contentType: string
+}
+
 // ─── Codra API ───
 
 export interface CodraFileInput {

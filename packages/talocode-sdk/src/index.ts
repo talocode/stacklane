@@ -57,6 +57,8 @@ export type {
   ClipLoopVideoRenderResult,
   ClipLoopCampaignCreateInput,
   ClipLoopCampaignResult,
+  ClipLoopVideoStatusResult,
+  ClipLoopVideoDownloadResult,
   UsageMeta,
   ApiErrorShape,
 } from '@stacklane/sdk'

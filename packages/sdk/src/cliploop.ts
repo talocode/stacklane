@@ -6,6 +6,8 @@ import type {
   ClipLoopScriptResult,
   ClipLoopVideoRenderInput,
   ClipLoopVideoRenderResult,
+  ClipLoopVideoStatusResult,
+  ClipLoopVideoDownloadResult,
   ClipLoopCampaignCreateInput,
   ClipLoopCampaignResult,
 } from './types'
@@ -47,6 +49,20 @@ export class ClipLoopClient {
       body: input,
       timeoutMs: this.timeoutMs,
     }) as Promise<ClipLoopVideoRenderResult>
+  }
+
+  async videoStatus(videoId: string): Promise<ClipLoopVideoStatusResult> {
+    return request(this.baseUrl, this.getNamespacePath(`/video/${videoId}`), this.apiKey, {
+      method: 'GET',
+      timeoutMs: this.timeoutMs,
+    }) as Promise<ClipLoopVideoStatusResult>
+  }
+
+  async videoDownload(videoId: string): Promise<ClipLoopVideoDownloadResult> {
+    return request(this.baseUrl, this.getNamespacePath(`/video/${videoId}/download`), this.apiKey, {
+      method: 'GET',
+      timeoutMs: this.timeoutMs,
+    }) as Promise<ClipLoopVideoDownloadResult>
   }
 
   campaign = {

@@ -781,6 +781,211 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     throw new HttpError(404, 'NOT_FOUND', 'Agent Browser API route not found.', { method: req.method, path })
   }
 
+  // ─── ClipLoop API (API-key authenticated) ────────────────────────────────
+
+  if (path.startsWith('/v1/cliploop/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+
+    if (req.method === 'GET' && path === '/v1/cliploop/health') {
+      sendData(res, 200, {
+        status: 'ok',
+        version: '0.1.0',
+        endpoints: [
+          'POST /v1/cliploop/brief/generate',
+          'POST /v1/cliploop/script/generate',
+          'POST /v1/cliploop/video/render',
+          'GET /v1/cliploop/video/:id',
+          'POST /v1/cliploop/campaign/create',
+          'POST /v1/cliploop/campaign/package',
+          'GET /v1/cliploop/health',
+        ],
+      })
+      return
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req)
+      const { generateBrief, generateScript, submitRender, createCampaign, packageCampaign } = await import('./services/cliploop/service.js')
+
+      if (path === '/v1/cliploop/brief/generate') {
+        const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+        if (!prompt) throw new HttpError(422, 'VALIDATION_ERROR', 'prompt is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'cliploop',
+          action: 'brief.generate',
+          credits: 15,
+          requestId: undefined,
+          metadata: { prompt: prompt.slice(0, 200) },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await generateBrief({
+            prompt,
+            channel: typeof body.channel === 'string' ? body.channel : undefined,
+            duration: typeof body.duration === 'number' ? body.duration : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'cliploop.brief.generate' } })
+        } catch (error) {
+          throw new HttpError(422, 'CLIPLOOP_ERROR', error instanceof Error ? error.message : 'Brief generation failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/cliploop/script/generate') {
+        const briefId = typeof body.briefId === 'string' ? body.briefId.trim() : ''
+        if (!briefId) throw new HttpError(422, 'VALIDATION_ERROR', 'briefId is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'cliploop',
+          action: 'script.generate',
+          credits: 15,
+          requestId: undefined,
+          metadata: { briefId },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await generateScript({
+            briefId,
+            style: typeof body.style === 'string' ? body.style : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'cliploop.script.generate' } })
+        } catch (error) {
+          throw new HttpError(422, 'CLIPLOOP_ERROR', error instanceof Error ? error.message : 'Script generation failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/cliploop/video/render') {
+        const scriptId = typeof body.scriptId === 'string' ? body.scriptId.trim() : ''
+        if (!scriptId) throw new HttpError(422, 'VALIDATION_ERROR', 'scriptId is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'cliploop',
+          action: 'video.render',
+          credits: 200,
+          requestId: undefined,
+          metadata: { scriptId },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await submitRender({
+            scriptId,
+            format: body.format === 'landscape' || body.format === 'square' ? body.format : undefined,
+            quality: body.quality === 'draft' || body.quality === 'standard' || body.quality === 'high' ? body.quality : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'cliploop.video.render' } })
+        } catch (error) {
+          throw new HttpError(422, 'CLIPLOOP_ERROR', error instanceof Error ? error.message : 'Video render submission failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/cliploop/campaign/create') {
+        const name = typeof body.name === 'string' ? body.name.trim() : ''
+        if (!name) throw new HttpError(422, 'VALIDATION_ERROR', 'name is required.')
+        const platform = typeof body.platform === 'string' ? body.platform.trim() : ''
+        if (!platform) throw new HttpError(422, 'VALIDATION_ERROR', 'platform is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'cliploop',
+          action: 'campaign.create',
+          credits: 50,
+          requestId: undefined,
+          metadata: { name, platform },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await createCampaign({
+            name,
+            platform,
+            schedule: typeof body.schedule === 'string' ? body.schedule : undefined,
+          })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'cliploop.campaign.create' } })
+        } catch (error) {
+          throw new HttpError(422, 'CLIPLOOP_ERROR', error instanceof Error ? error.message : 'Campaign creation failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/cliploop/campaign/package') {
+        const campaignId = typeof body.campaignId === 'string' ? body.campaignId.trim() : ''
+        if (!campaignId) throw new HttpError(422, 'VALIDATION_ERROR', 'campaignId is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'cliploop',
+          action: 'campaign.package',
+          credits: 400,
+          requestId: undefined,
+          metadata: { campaignId },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const result = await packageCampaign(campaignId)
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'cliploop.campaign.package' } })
+        } catch (error) {
+          throw new HttpError(422, 'CLIPLOOP_ERROR', error instanceof Error ? error.message : 'Campaign packaging failed.')
+        }
+        return
+      }
+    }
+
+    if (req.method === 'GET' && path.startsWith('/v1/cliploop/video/')) {
+      const renderId = decodeURIComponent(path.replace('/v1/cliploop/video/', ''))
+
+      const { getRenderStatus } = await import('./services/cliploop/service.js')
+      try {
+        const result = await getRenderStatus(renderId)
+        sendData(res, 200, result)
+      } catch (error) {
+        throw new HttpError(404, 'NOT_FOUND', error instanceof Error ? error.message : 'Render job not found.')
+      }
+      return
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'ClipLoop API route not found.', { method: req.method, path })
+  }
+
   // ─── Stripe Webhook (no session auth) ──────────────────────────────────
 
   if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {
