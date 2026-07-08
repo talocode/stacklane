@@ -1,6 +1,6 @@
 {
   "name": "@talocode/cliploop",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Programmatic video generation — prompt-to-video engine for briefs, scripts, and renders",
   "type": "module",
   "main": "dist/index.js",
