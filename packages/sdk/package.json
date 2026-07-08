@@ -1,7 +1,7 @@
 {
-  "name": "@stacklane/sdk",
+  "name": "@talocode/sdk-client",
   "version": "0.5.0",
-  "description": "Talocode Cloud SDK — @talocode/sdk (alias @stacklane/sdk)",
+  "description": "Talocode Cloud SDK client library",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

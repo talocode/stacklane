@@ -1,7 +1,7 @@
 // @talocode/sdk — Talocode Cloud SDK
 //
 // This is the official programmable interface for all Talocode products.
-// Currently re-exports from @stacklane/sdk until published independently.
+// Re-exports from @talocode/sdk-client
 //
 // Package name prepared for @talocode/sdk.
 // Not yet published to npm.
@@ -18,7 +18,7 @@ export {
   TalocodeValidationError,
   TalocodeNotImplementedError,
   createStacklaneClient,
-} from '@stacklane/sdk'
+} from '@talocode/sdk-client'
 export type {
   TalocodeOptions,
   StacklaneClientOptions,
@@ -61,4 +61,4 @@ export type {
   ClipLoopVideoDownloadResult,
   UsageMeta,
   ApiErrorShape,
-} from '@stacklane/sdk'
+} from '@talocode/sdk-client'
