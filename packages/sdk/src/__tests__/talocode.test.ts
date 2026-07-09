@@ -103,6 +103,8 @@ describe('Talocode SDK', () => {
       const c = new Talocode()
       assert.ok(c.invoicelane)
       assert.strictEqual(typeof c.invoicelane.health, 'function')
+      assert.strictEqual(typeof c.invoicelane.pricing, 'function')
+      assert.strictEqual(typeof c.invoicelane.capabilities, 'function')
       assert.strictEqual(typeof c.invoicelane.extract, 'function')
       assert.strictEqual(typeof c.invoicelane.invoiceExtract, 'function')
       assert.strictEqual(typeof c.invoicelane.receiptExtract, 'function')
@@ -115,7 +117,7 @@ describe('Talocode SDK', () => {
       const origFetch = globalThis.fetch
       globalThis.fetch = async (url: RequestInfo | URL) => {
         capturedUrl = typeof url === 'string' ? url : url.toString()
-        return new Response(JSON.stringify({ ok: true, service: 'invoicelane', version: '0.1.0' }), { status: 200, headers: { 'content-type': 'application/json' } })
+        return new Response(JSON.stringify({ ok: true, service: 'invoicelane', version: '0.2.0' }), { status: 200, headers: { 'content-type': 'application/json' } })
       }
       try {
         const c = new Talocode({ apiKey: 'test-key' })

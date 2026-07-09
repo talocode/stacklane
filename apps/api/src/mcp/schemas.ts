@@ -252,14 +252,47 @@ export const skillsExportCursorSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const invoicelaneHealthSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const invoicelanePricingSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const invoicelaneCapabilitiesSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
 export const invoicelaneExtractSchema: McpToolInputSchema = {
   type: 'object',
   properties: {
-    text: { type: 'string', description: 'Raw text from an invoice or receipt' },
-    type: { type: 'string', enum: ['invoice', 'receipt', 'document', 'auto'], description: 'Document type hint' },
-    currency: { type: 'string', description: 'Expected currency (e.g. NGN, USD)' },
-    locale: { type: 'string', description: 'Locale for parsing (e.g. en-NG)' },
-    fileUrl: { type: 'string', description: 'URL to a document file (OCR not available in v0.2 — provide text)' },
+    text: {
+      type: 'string',
+      description:
+        'Raw text from an invoice or receipt (required). OCR/PDF not supported in v0.2 — extract text first.',
+    },
+    type: {
+      type: 'string',
+      enum: ['invoice', 'receipt', 'document', 'auto'],
+      description: 'Document type hint. Auto-detect if omitted.',
+    },
+    currency: { type: 'string', description: 'Expected currency code (e.g. NGN, USD, EUR, GBP)' },
+    locale: { type: 'string', description: 'Locale for parsing (e.g. en-NG, en-US)' },
+    fileUrl: {
+      type: 'string',
+      description: 'URL to a document file — returns OCR_NOT_AVAILABLE unless text is also provided',
+    },
+    base64: {
+      type: 'string',
+      description: 'Base64 document — returns OCR_NOT_AVAILABLE unless text is also provided',
+    },
   },
   required: [],
   additionalProperties: false,
@@ -268,9 +301,14 @@ export const invoicelaneExtractSchema: McpToolInputSchema = {
 export const invoicelaneExtractReceiptSchema: McpToolInputSchema = {
   type: 'object',
   properties: {
-    text: { type: 'string', description: 'Raw receipt text' },
-    currency: { type: 'string', description: 'Expected currency' },
+    text: {
+      type: 'string',
+      description: 'Raw receipt text. Returns receiptNumber, merchant/vendor, total, date, missingFields, totalsConsistent.',
+    },
+    currency: { type: 'string', description: 'Expected currency code (e.g. NGN, USD)' },
     locale: { type: 'string', description: 'Locale for parsing' },
+    fileUrl: { type: 'string', description: 'Document URL (OCR not available — provide text)' },
+    base64: { type: 'string', description: 'Base64 document (OCR not available — provide text)' },
   },
   required: [],
   additionalProperties: false,
@@ -279,9 +317,15 @@ export const invoicelaneExtractReceiptSchema: McpToolInputSchema = {
 export const invoicelaneExtractInvoiceSchema: McpToolInputSchema = {
   type: 'object',
   properties: {
-    text: { type: 'string', description: 'Raw invoice text' },
-    currency: { type: 'string', description: 'Expected currency' },
+    text: {
+      type: 'string',
+      description:
+        'Raw invoice text. Returns invoiceNumber, vendor, total, subtotal, tax, line items, missingFields, totalsConsistent. Invoice schema requires: invoiceNumber, total, currency, date.',
+    },
+    currency: { type: 'string', description: 'Expected currency code (e.g. NGN, USD)' },
     locale: { type: 'string', description: 'Locale for parsing' },
+    fileUrl: { type: 'string', description: 'Document URL (OCR not available — provide text)' },
+    base64: { type: 'string', description: 'Base64 document (OCR not available — provide text)' },
   },
   required: [],
   additionalProperties: false,
@@ -290,8 +334,16 @@ export const invoicelaneExtractInvoiceSchema: McpToolInputSchema = {
 export const invoicelaneValidateSchema: McpToolInputSchema = {
   type: 'object',
   properties: {
-    documentType: { type: 'string', description: 'Type of document (invoice, receipt)' },
-    fields: { type: 'object', description: 'Extracted fields to validate', additionalProperties: true },
+    documentType: {
+      type: 'string',
+      description: 'Document type: invoice (requires invoiceNumber, total, currency, date) or receipt (requires total, currency, date)',
+    },
+    fields: {
+      type: 'object',
+      description:
+        'Extracted fields to validate against the schema contract. Checks required fields, number types, and totals consistency (subtotal + tax - discount ≈ total).',
+      additionalProperties: true,
+    },
   },
   required: ['documentType', 'fields'],
   additionalProperties: false,
@@ -300,7 +352,11 @@ export const invoicelaneValidateSchema: McpToolInputSchema = {
 export const invoicelaneExportCsvSchema: McpToolInputSchema = {
   type: 'object',
   properties: {
-    rows: { type: 'array', items: { type: 'object' }, description: 'Array of row objects to export as CSV' },
+    rows: {
+      type: 'array',
+      items: { type: 'object' },
+      description: 'Array of row objects (e.g. extracted invoices) to export as CSV',
+    },
   },
   required: ['rows'],
   additionalProperties: false,

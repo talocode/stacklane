@@ -312,10 +312,29 @@ describe('Talocode MCP v0.1', () => {
     })
 
     it('invoicelane tools reference correct routes', () => {
+      const health = TOOL_MAP.get('invoicelane_health')!
+      assert.strictEqual(health.route, '/v1/invoicelane/health')
+      assert.strictEqual(health.method, 'GET')
+      assert.strictEqual(health.product, 'invoicelane')
+      assert.strictEqual(health.estimatedCredits, null)
+      assert.ok(health.description.toLowerCase().includes('health'))
+
+      const pricing = TOOL_MAP.get('invoicelane_pricing')!
+      assert.strictEqual(pricing.route, '/v1/invoicelane/pricing')
+      assert.strictEqual(pricing.method, 'GET')
+      assert.strictEqual(pricing.estimatedCredits, null)
+
+      const capabilities = TOOL_MAP.get('invoicelane_capabilities')!
+      assert.strictEqual(capabilities.route, '/v1/invoicelane/capabilities')
+      assert.strictEqual(capabilities.method, 'GET')
+      assert.strictEqual(capabilities.estimatedCredits, null)
+      assert.ok(capabilities.description.toLowerCase().includes('schema'))
+
       const extract = TOOL_MAP.get('invoicelane_extract')!
       assert.strictEqual(extract.route, '/v1/invoicelane/extract')
       assert.strictEqual(extract.product, 'invoicelane')
       assert.strictEqual(extract.estimatedCredits, 20)
+      assert.ok(extract.description.includes('missingFields') || extract.description.includes('schema'))
 
       const receipt = TOOL_MAP.get('invoicelane_extract_receipt')!
       assert.strictEqual(receipt.route, '/v1/invoicelane/receipt/extract')
@@ -324,10 +343,12 @@ describe('Talocode MCP v0.1', () => {
       const invoice = TOOL_MAP.get('invoicelane_extract_invoice')!
       assert.strictEqual(invoice.route, '/v1/invoicelane/invoice/extract')
       assert.strictEqual(invoice.estimatedCredits, 30)
+      assert.ok(invoice.description.includes('invoiceNumber'))
 
       const validate = TOOL_MAP.get('invoicelane_validate')!
       assert.strictEqual(validate.route, '/v1/invoicelane/validate')
       assert.strictEqual(validate.estimatedCredits, 10)
+      assert.ok(validate.description.toLowerCase().includes('schema'))
 
       const csv = TOOL_MAP.get('invoicelane_export_csv')!
       assert.strictEqual(csv.route, '/v1/invoicelane/export/csv')

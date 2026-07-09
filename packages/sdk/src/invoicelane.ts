@@ -51,9 +51,17 @@ export class InvoiceLaneClient {
     this.api = api
   }
 
-  async health(): Promise<{ ok: boolean; service: string; version: string }> {
+  async health(): Promise<{ ok: boolean; service: string; version: string; endpoints?: string[] }> {
     const res = await this.api.request('/v1/invoicelane/health')
-    return res as { ok: boolean; service: string; version: string }
+    return res as { ok: boolean; service: string; version: string; endpoints?: string[] }
+  }
+
+  async pricing(): Promise<Record<string, unknown>> {
+    return this.api.request('/v1/invoicelane/pricing') as Promise<Record<string, unknown>>
+  }
+
+  async capabilities(): Promise<Record<string, unknown>> {
+    return this.api.request('/v1/invoicelane/capabilities') as Promise<Record<string, unknown>>
   }
 
   async extract(input: InvoiceLaneExtractInput): Promise<InvoiceLaneResponse<Record<string, unknown>>> {

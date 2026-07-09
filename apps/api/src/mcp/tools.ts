@@ -22,6 +22,9 @@ import {
   skillsGenerateTextSchema,
   skillsExportCursorSchema,
   skillsExportClaudeSchema,
+  invoicelaneHealthSchema,
+  invoicelanePricingSchema,
+  invoicelaneCapabilitiesSchema,
   invoicelaneExtractSchema,
   invoicelaneExtractReceiptSchema,
   invoicelaneExtractInvoiceSchema,
@@ -300,8 +303,42 @@ export const ALL_TOOLS: McpToolDefinition[] = [
     estimatedCredits: null,
   },
   {
+    name: 'invoicelane_health',
+    description:
+      'Check InvoiceLane Document API health, version (v0.2), and available endpoints. Free (no credits).',
+    inputSchema: invoicelaneHealthSchema,
+    route: '/v1/invoicelane/health',
+    method: 'GET',
+    product: 'invoicelane',
+    action: 'invoicelane.health',
+    estimatedCredits: null,
+  },
+  {
+    name: 'invoicelane_pricing',
+    description:
+      'Get InvoiceLane credit pricing: extract 20, receipt.extract 20, invoice.extract 30, validate 10, export.csv 5. Free (no credits).',
+    inputSchema: invoicelanePricingSchema,
+    route: '/v1/invoicelane/pricing',
+    method: 'GET',
+    product: 'invoicelane',
+    action: 'invoicelane.pricing',
+    estimatedCredits: null,
+  },
+  {
+    name: 'invoicelane_capabilities',
+    description:
+      'List InvoiceLane capabilities, schema contract (invoice requires invoiceNumber/total/currency/date; receipt requires total/currency/date), endpoints, and limitations (text-only, no OCR/PDF in v0.2). Free (no credits).',
+    inputSchema: invoicelaneCapabilitiesSchema,
+    route: '/v1/invoicelane/capabilities',
+    method: 'GET',
+    product: 'invoicelane',
+    action: 'invoicelane.capabilities',
+    estimatedCredits: null,
+  },
+  {
     name: 'invoicelane_extract',
-    description: 'Extract structured data from invoice or receipt text. Provide raw text from an invoice or receipt document.',
+    description:
+      'Schema-first extract from invoice/receipt text. Returns merchant/vendor, totals, line items, confidence, missingFields, totalsConsistent, warnings. Provide text (OCR/PDF not supported). 20 credits.',
     inputSchema: invoicelaneExtractSchema,
     route: '/v1/invoicelane/extract',
     method: 'POST',
@@ -311,7 +348,8 @@ export const ALL_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'invoicelane_extract_receipt',
-    description: 'Extract structured data from receipt text specifically.',
+    description:
+      'Extract a receipt as structured JSON (receiptNumber, vendor, total, date, missingFields, totalsConsistent). Provide raw receipt text. 20 credits.',
     inputSchema: invoicelaneExtractReceiptSchema,
     route: '/v1/invoicelane/receipt/extract',
     method: 'POST',
@@ -321,7 +359,8 @@ export const ALL_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'invoicelane_extract_invoice',
-    description: 'Extract structured data from invoice text specifically.',
+    description:
+      'Extract an invoice as structured JSON (invoiceNumber, vendor, subtotal, tax, total, line items, missingFields, totalsConsistent). Schema requires invoiceNumber, total, currency, date. Provide raw invoice text. 30 credits.',
     inputSchema: invoicelaneExtractInvoiceSchema,
     route: '/v1/invoicelane/invoice/extract',
     method: 'POST',
@@ -331,7 +370,8 @@ export const ALL_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'invoicelane_validate',
-    description: 'Validate extracted invoice/receipt fields for completeness and correctness.',
+    description:
+      'Validate extracted fields against the InvoiceLane schema contract. Checks required fields, numeric totals, and totals consistency (subtotal + tax - discount ≈ total). Returns valid, missingFields, warnings, normalized. 10 credits.',
     inputSchema: invoicelaneValidateSchema,
     route: '/v1/invoicelane/validate',
     method: 'POST',
@@ -341,7 +381,8 @@ export const ALL_TOOLS: McpToolDefinition[] = [
   },
   {
     name: 'invoicelane_export_csv',
-    description: 'Export extracted invoice/receipt data as CSV.',
+    description:
+      'Export an array of extracted invoice/receipt row objects to CSV (escaped headers and values). 5 credits.',
     inputSchema: invoicelaneExportCsvSchema,
     route: '/v1/invoicelane/export/csv',
     method: 'POST',
