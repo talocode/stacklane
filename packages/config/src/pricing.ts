@@ -35,6 +35,13 @@ export const TALOCODE_CLOUD_PRICING = {
       "invoicelane.validate": 10,
       "invoicelane.export.csv": 5
     },
+    geolane: {
+      "geolane.audit": 40,
+      "geolane.crawlers": 15,
+      "geolane.llms_txt": 20,
+      "geolane.citation_readiness": 25,
+      "geolane.compare": 50
+    },
     signallane: {
       "signallane.x.analyze": 30,
       "signallane.x.content_plan": 40,

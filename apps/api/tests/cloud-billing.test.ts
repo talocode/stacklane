@@ -48,6 +48,11 @@ test('getPricingForAction returns correct credit cost', () => {
   assert.equal(getPricingForAction('invoicelane', 'invoicelane.invoice.extract'), 30)
   assert.equal(getPricingForAction('invoicelane', 'invoicelane.validate'), 10)
   assert.equal(getPricingForAction('invoicelane', 'invoicelane.export.csv'), 5)
+  assert.equal(getPricingForAction('geolane', 'geolane.audit'), 40)
+  assert.equal(getPricingForAction('geolane', 'geolane.crawlers'), 15)
+  assert.equal(getPricingForAction('geolane', 'geolane.llms_txt'), 20)
+  assert.equal(getPricingForAction('geolane', 'geolane.citation_readiness'), 25)
+  assert.equal(getPricingForAction('geolane', 'geolane.compare'), 50)
 })
 
 test('getPricingForAction returns null for unknown product', () => {

@@ -366,6 +366,35 @@ describe('Talocode MCP v0.1', () => {
       assert.ok(tool.inputSchema.required?.includes('rows'))
     })
 
+    it('geolane tools reference correct routes', () => {
+      const health = TOOL_MAP.get('geolane_health')!
+      assert.strictEqual(health.route, '/v1/geolane/health')
+      assert.strictEqual(health.method, 'GET')
+      assert.strictEqual(health.estimatedCredits, null)
+
+      const audit = TOOL_MAP.get('geolane_audit')!
+      assert.strictEqual(audit.route, '/v1/geolane/audit')
+      assert.strictEqual(audit.product, 'geolane')
+      assert.strictEqual(audit.estimatedCredits, 40)
+      assert.ok(audit.inputSchema.required?.includes('url'))
+
+      const crawlers = TOOL_MAP.get('geolane_crawlers')!
+      assert.strictEqual(crawlers.route, '/v1/geolane/crawlers')
+      assert.strictEqual(crawlers.estimatedCredits, 15)
+
+      const llms = TOOL_MAP.get('geolane_llms_txt')!
+      assert.strictEqual(llms.route, '/v1/geolane/llms-txt')
+      assert.strictEqual(llms.estimatedCredits, 20)
+
+      const citation = TOOL_MAP.get('geolane_citation_readiness')!
+      assert.strictEqual(citation.route, '/v1/geolane/citation-readiness')
+      assert.strictEqual(citation.estimatedCredits, 25)
+
+      const compare = TOOL_MAP.get('geolane_compare')!
+      assert.strictEqual(compare.route, '/v1/geolane/compare')
+      assert.strictEqual(compare.estimatedCredits, 50)
+    })
+
     it('skills tools reference correct routes', () => {
       const profile = TOOL_MAP.get('skills_generate_github_profile')!
       assert.strictEqual(profile.route, '/v1/skills/generate/github-profile')

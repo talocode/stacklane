@@ -362,6 +362,84 @@ export const invoicelaneExportCsvSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const geolaneHealthSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const geolanePricingSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const geolaneCapabilitiesSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const geolaneAuditSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: {
+      type: 'string',
+      description: 'Public page or domain URL to audit for AI search visibility (GEO)',
+    },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const geolaneCrawlersSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: {
+      type: 'string',
+      description: 'URL whose origin robots.txt will be checked against major AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.)',
+    },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const geolaneLlmsTxtSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: {
+      type: 'string',
+      description: 'Site URL — checks /llms.txt, scores quality, and returns a ready-to-publish draft',
+    },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const geolaneCitationReadinessSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    url: {
+      type: 'string',
+      description: 'Page URL to score for AI citation readiness (structure, schema, E-E-A-T, passage length)',
+    },
+  },
+  required: ['url'],
+  additionalProperties: false,
+}
+
+export const geolaneCompareSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    urlA: { type: 'string', description: 'First domain/page URL' },
+    urlB: { type: 'string', description: 'Second domain/page URL' },
+    a: { type: 'string', description: 'Alias for urlA' },
+    b: { type: 'string', description: 'Alias for urlB' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
 export const webdatalaneFetchSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

@@ -1049,6 +1049,248 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     throw new HttpError(404, 'NOT_FOUND', 'InvoiceLane API route not found.', { method: req.method, path })
   }
 
+  // ─── GeoLane AI Visibility API (API-key authenticated) ───────────────────
+
+  if (path.startsWith('/v1/geolane/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+    const {
+      runGeoAudit,
+      runCrawlerAccess,
+      runLlmsTxt,
+      runCitationReadiness,
+      runCompare,
+      getGeoLanePricing,
+      getGeoLaneCapabilities,
+    } = await import('./services/geolane.js')
+
+    if (req.method === 'GET' && path === '/v1/geolane/health') {
+      sendData(res, 200, {
+        ok: true,
+        service: 'geolane',
+        version: '0.1.0',
+        endpoints: getGeoLaneCapabilities().endpoints,
+      })
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/geolane/pricing') {
+      sendData(res, 200, getGeoLanePricing())
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/geolane/capabilities') {
+      sendData(res, 200, getGeoLaneCapabilities())
+      return
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req)
+
+      if (path === '/v1/geolane/audit') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'geolane',
+          action: 'geolane.audit',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+
+        try {
+          const result = await runGeoAudit(url)
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'geolane.audit',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'GEO_ERROR', error instanceof Error ? error.message : 'GEO audit failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/geolane/crawlers') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'geolane',
+          action: 'geolane.crawlers',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+
+        try {
+          const result = await runCrawlerAccess(url)
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'geolane.crawlers',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'GEO_ERROR', error instanceof Error ? error.message : 'Crawler access check failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/geolane/llms-txt') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'geolane',
+          action: 'geolane.llms_txt',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+
+        try {
+          const result = await runLlmsTxt(url)
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'geolane.llms_txt',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'GEO_ERROR', error instanceof Error ? error.message : 'llms.txt analysis failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/geolane/citation-readiness') {
+        const url = typeof body.url === 'string' ? body.url.trim() : ''
+        if (!url) throw new HttpError(422, 'VALIDATION_ERROR', 'url is required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'geolane',
+          action: 'geolane.citation_readiness',
+          requestId: undefined,
+          metadata: { url },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+
+        try {
+          const result = await runCitationReadiness(url)
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'geolane.citation_readiness',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'GEO_ERROR', error instanceof Error ? error.message : 'Citation readiness failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/geolane/compare') {
+        const urlA = typeof body.urlA === 'string' ? body.urlA.trim() : typeof body.a === 'string' ? body.a.trim() : ''
+        const urlB = typeof body.urlB === 'string' ? body.urlB.trim() : typeof body.b === 'string' ? body.b.trim() : ''
+        if (!urlA || !urlB) throw new HttpError(422, 'VALIDATION_ERROR', 'urlA and urlB are required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'geolane',
+          action: 'geolane.compare',
+          requestId: undefined,
+          metadata: { urlA, urlB },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+
+        try {
+          const result = await runCompare(urlA, urlB)
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'geolane.compare',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'GEO_ERROR', error instanceof Error ? error.message : 'GEO compare failed.')
+        }
+        return
+      }
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'GeoLane API route not found.', { method: req.method, path })
+  }
+
   // ─── ClipLoop API (API-key authenticated) ────────────────────────────────
 
   if (path.startsWith('/v1/cliploop/')) {

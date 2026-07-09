@@ -112,6 +112,38 @@ describe('Talocode SDK', () => {
       assert.strictEqual(typeof c.invoicelane.exportCsv, 'function')
     })
 
+    it('has geolane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.geolane)
+      assert.strictEqual(typeof c.geolane.health, 'function')
+      assert.strictEqual(typeof c.geolane.pricing, 'function')
+      assert.strictEqual(typeof c.geolane.capabilities, 'function')
+      assert.strictEqual(typeof c.geolane.audit, 'function')
+      assert.strictEqual(typeof c.geolane.crawlers, 'function')
+      assert.strictEqual(typeof c.geolane.llmsTxt, 'function')
+      assert.strictEqual(typeof c.geolane.citationReadiness, 'function')
+      assert.strictEqual(typeof c.geolane.compare, 'function')
+    })
+
+    it('geolane.audit calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ score: 80, grade: 'B' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.geolane.audit({ url: 'https://example.com' })
+        assert.ok(capturedUrl.includes('/v1/geolane/audit'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('invoicelane.health returns expected shape', async () => {
       let capturedUrl = ''
       const origFetch = globalThis.fetch
@@ -125,7 +157,7 @@ describe('Talocode SDK', () => {
         assert.ok(capturedUrl.includes('/v1/invoicelane/health'))
         assert.strictEqual(res.ok, true)
         assert.strictEqual(res.service, 'invoicelane')
-        assert.strictEqual(res.version, '0.1.0')
+        assert.strictEqual(res.version, '0.2.0')
       } finally {
         globalThis.fetch = origFetch
       }
