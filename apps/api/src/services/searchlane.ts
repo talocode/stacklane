@@ -266,7 +266,9 @@ async function searchBrave(query: string, limit: number, news = false): Promise<
     })
     if (!res.ok) return null
     const data = JSON.parse(res.text) as {
-      web?: { results?: Array<{ title?: string; url?: string; description?: string; age?: string }> }
+      web?: {
+        results?: Array<{ title?: string; url?: string; description?: string; age?: string; page_age?: string }>
+      }
       results?: Array<{ title?: string; url?: string; description?: string; age?: string; page_age?: string }>
     }
     const items = data.web?.results || data.results || []
