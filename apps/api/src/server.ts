@@ -781,6 +781,274 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     throw new HttpError(404, 'NOT_FOUND', 'Agent Browser API route not found.', { method: req.method, path })
   }
 
+  // ─── InvoiceLane Document API (API-key authenticated) ────────────────────
+
+  if (path.startsWith('/v1/invoicelane/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+
+    const {
+      extractFromText,
+      extractInvoiceFromText,
+      extractReceiptFromText,
+      validateFields,
+      toCsv,
+      getInvoiceLanePricing,
+      getInvoiceLaneCapabilities,
+      assertTextOrOcrError,
+      OcrNotAvailableError,
+    } = await import('./services/invoicelane.js')
+
+    if (req.method === 'GET' && path === '/v1/invoicelane/health') {
+      sendData(res, 200, {
+        ok: true,
+        service: 'invoicelane',
+        version: '0.2.0',
+        endpoints: [
+          'GET /v1/invoicelane/health',
+          'GET /v1/invoicelane/pricing',
+          'GET /v1/invoicelane/capabilities',
+          'POST /v1/invoicelane/extract',
+          'POST /v1/invoicelane/invoice/extract',
+          'POST /v1/invoicelane/receipt/extract',
+          'POST /v1/invoicelane/validate',
+          'POST /v1/invoicelane/export/csv',
+        ],
+      })
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/invoicelane/pricing') {
+      sendData(res, 200, getInvoiceLanePricing())
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/invoicelane/capabilities') {
+      sendData(res, 200, getInvoiceLaneCapabilities())
+      return
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req)
+
+      if (path === '/v1/invoicelane/extract') {
+        try {
+          const text = assertTextOrOcrError(body as { text?: string; fileUrl?: string; base64?: string })
+          const chargeResult = await chargeCredits({
+            projectId: apiKey.project_id,
+            apiKeyId: apiKey.id,
+            product: 'invoicelane',
+            action: 'invoicelane.extract',
+            requestId: undefined,
+            metadata: { type: body.type, inputSize: text.length },
+          })
+          if (!chargeResult.success) {
+            sendData(res, 402, {
+              ok: false,
+              error: 'insufficient_credits',
+              required: chargeResult.event.credits,
+              available: chargeResult.remainingCredits,
+            })
+            return
+          }
+
+          const result = extractFromText(text, {
+            type: typeof body.type === 'string' ? (body.type as 'invoice' | 'receipt' | 'document' | 'auto') : undefined,
+            currency: typeof body.currency === 'string' ? body.currency : undefined,
+            locale: typeof body.locale === 'string' ? body.locale : undefined,
+          })
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'invoicelane.extract',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          if (error instanceof OcrNotAvailableError) {
+            throw new HttpError(400, 'OCR_NOT_AVAILABLE', error.message)
+          }
+          throw error
+        }
+        return
+      }
+
+      if (path === '/v1/invoicelane/invoice/extract') {
+        try {
+          const text = assertTextOrOcrError(body as { text?: string; fileUrl?: string; base64?: string })
+          const chargeResult = await chargeCredits({
+            projectId: apiKey.project_id,
+            apiKeyId: apiKey.id,
+            product: 'invoicelane',
+            action: 'invoicelane.invoice.extract',
+            requestId: undefined,
+            metadata: { inputSize: text.length },
+          })
+          if (!chargeResult.success) {
+            sendData(res, 402, {
+              ok: false,
+              error: 'insufficient_credits',
+              required: chargeResult.event.credits,
+              available: chargeResult.remainingCredits,
+            })
+            return
+          }
+
+          const result = extractInvoiceFromText(text, {
+            currency: typeof body.currency === 'string' ? body.currency : undefined,
+            locale: typeof body.locale === 'string' ? body.locale : undefined,
+          })
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'invoicelane.invoice.extract',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          if (error instanceof OcrNotAvailableError) {
+            throw new HttpError(400, 'OCR_NOT_AVAILABLE', error.message)
+          }
+          throw error
+        }
+        return
+      }
+
+      if (path === '/v1/invoicelane/receipt/extract') {
+        try {
+          const text = assertTextOrOcrError(body as { text?: string; fileUrl?: string; base64?: string })
+          const chargeResult = await chargeCredits({
+            projectId: apiKey.project_id,
+            apiKeyId: apiKey.id,
+            product: 'invoicelane',
+            action: 'invoicelane.receipt.extract',
+            requestId: undefined,
+            metadata: { inputSize: text.length },
+          })
+          if (!chargeResult.success) {
+            sendData(res, 402, {
+              ok: false,
+              error: 'insufficient_credits',
+              required: chargeResult.event.credits,
+              available: chargeResult.remainingCredits,
+            })
+            return
+          }
+
+          const result = extractReceiptFromText(text, {
+            currency: typeof body.currency === 'string' ? body.currency : undefined,
+            locale: typeof body.locale === 'string' ? body.locale : undefined,
+          })
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'invoicelane.receipt.extract',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          if (error instanceof OcrNotAvailableError) {
+            throw new HttpError(400, 'OCR_NOT_AVAILABLE', error.message)
+          }
+          throw error
+        }
+        return
+      }
+
+      if (path === '/v1/invoicelane/validate') {
+        const documentType = typeof body.documentType === 'string' ? body.documentType : ''
+        const fields =
+          body.fields && typeof body.fields === 'object' && !Array.isArray(body.fields)
+            ? (body.fields as Record<string, unknown>)
+            : null
+        if (!documentType || !fields) {
+          throw new HttpError(422, 'VALIDATION_ERROR', 'documentType and fields are required.')
+        }
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'invoicelane',
+          action: 'invoicelane.validate',
+          requestId: undefined,
+          metadata: { documentType },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+
+        const result = validateFields({ documentType, fields })
+        sendData(res, 200, {
+          ...result,
+          usage: {
+            credits: chargeResult.event.credits,
+            action: 'invoicelane.validate',
+            remaining: chargeResult.remainingCredits,
+          },
+        })
+        return
+      }
+
+      if (path === '/v1/invoicelane/export/csv') {
+        const rows = Array.isArray(body.rows) ? (body.rows as Record<string, unknown>[]) : null
+        if (!rows) {
+          throw new HttpError(422, 'VALIDATION_ERROR', 'rows array is required.')
+        }
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'invoicelane',
+          action: 'invoicelane.export.csv',
+          requestId: undefined,
+          metadata: { rowCount: rows.length },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+
+        const csv = toCsv(rows)
+        sendData(res, 200, {
+          filename: 'export.csv',
+          contentType: 'text/csv',
+          csv,
+          usage: {
+            credits: chargeResult.event.credits,
+            action: 'invoicelane.export.csv',
+            remaining: chargeResult.remainingCredits,
+          },
+        })
+        return
+      }
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'InvoiceLane API route not found.', { method: req.method, path })
+  }
+
   // ─── ClipLoop API (API-key authenticated) ────────────────────────────────
 
   if (path.startsWith('/v1/cliploop/')) {

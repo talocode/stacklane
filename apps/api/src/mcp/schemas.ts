@@ -259,7 +259,7 @@ export const invoicelaneExtractSchema: McpToolInputSchema = {
     type: { type: 'string', enum: ['invoice', 'receipt', 'document', 'auto'], description: 'Document type hint' },
     currency: { type: 'string', description: 'Expected currency (e.g. NGN, USD)' },
     locale: { type: 'string', description: 'Locale for parsing (e.g. en-NG)' },
-    fileUrl: { type: 'string', description: 'URL to a document file (OCR not available in v0.1)' },
+    fileUrl: { type: 'string', description: 'URL to a document file (OCR not available in v0.2 — provide text)' },
   },
   required: [],
   additionalProperties: false,

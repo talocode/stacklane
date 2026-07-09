@@ -44,6 +44,10 @@ test('getPricingForAction returns correct credit cost', () => {
   assert.equal(getPricingForAction('agent_browser', 'browser.trace_report'), 15)
   assert.equal(getPricingForAction('cliploop', 'video.render'), 200)
   assert.equal(getPricingForAction('codra', 'plan'), 40)
+  assert.equal(getPricingForAction('invoicelane', 'invoicelane.extract'), 20)
+  assert.equal(getPricingForAction('invoicelane', 'invoicelane.invoice.extract'), 30)
+  assert.equal(getPricingForAction('invoicelane', 'invoicelane.validate'), 10)
+  assert.equal(getPricingForAction('invoicelane', 'invoicelane.export.csv'), 5)
 })
 
 test('getPricingForAction returns null for unknown product', () => {
