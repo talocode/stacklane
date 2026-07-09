@@ -42,6 +42,11 @@ export const TALOCODE_CLOUD_PRICING = {
       "geolane.citation_readiness": 25,
       "geolane.compare": 50
     },
+    searchlane: {
+      "searchlane.query": 5,
+      "searchlane.research": 30,
+      "searchlane.news": 8
+    },
     signallane: {
       "signallane.x.analyze": 30,
       "signallane.x.content_plan": 40,

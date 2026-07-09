@@ -5,6 +5,7 @@ import { CodraClient } from './codra'
 import { SkillsClient } from './skills'
 import { InvoiceLaneClient } from './invoicelane'
 import { GeoLaneClient } from './geolane'
+import { SearchLaneClient } from './searchlane'
 import { WebDataLaneClient } from './webdatalane'
 import { SignalLaneClient } from './signallane'
 import { UGCLaneClient } from './ugclane'
@@ -36,6 +37,7 @@ export class TalocodeApiClient {
   public skills: SkillsClient
   public invoicelane: InvoiceLaneClient
   public geolane: GeoLaneClient
+  public searchlane: SearchLaneClient
   public webdatalane: WebDataLaneClient
   public ugclane: UGCLaneClient
   public crawlerlane: CrawlerLaneClient
@@ -66,6 +68,7 @@ export class TalocodeApiClient {
     this.skills = new SkillsClient(this.baseUrl, this.apiKey, this.timeoutMs)
     this.invoicelane = new InvoiceLaneClient(this)
     this.geolane = new GeoLaneClient(this)
+    this.searchlane = new SearchLaneClient(this)
     this.webdatalane = new WebDataLaneClient(this)
     this.ugclane = new UGCLaneClient(this)
     this.crawlerlane = new CrawlerLaneClient(this)

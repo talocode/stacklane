@@ -1291,6 +1291,165 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     throw new HttpError(404, 'NOT_FOUND', 'GeoLane API route not found.', { method: req.method, path })
   }
 
+  // ─── SearchLane Agent Search API (API-key authenticated) ─────────────────
+
+  if (path.startsWith('/v1/searchlane/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+    const {
+      runSearchQuery,
+      runSearchNews,
+      runResearch,
+      getSearchLanePricing,
+      getSearchLaneCapabilities,
+    } = await import('./services/searchlane.js')
+
+    if (req.method === 'GET' && path === '/v1/searchlane/health') {
+      sendData(res, 200, {
+        ok: true,
+        service: 'searchlane',
+        version: '0.1.0',
+        endpoints: getSearchLaneCapabilities().endpoints,
+      })
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/searchlane/pricing') {
+      sendData(res, 200, getSearchLanePricing())
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/searchlane/capabilities') {
+      sendData(res, 200, getSearchLaneCapabilities())
+      return
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req)
+      const query = typeof body.query === 'string' ? body.query.trim() : typeof body.q === 'string' ? body.q.trim() : ''
+      const limit = typeof body.limit === 'number' ? body.limit : undefined
+
+      if (path === '/v1/searchlane/query') {
+        if (!query) throw new HttpError(422, 'VALIDATION_ERROR', 'query is required.')
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'searchlane',
+          action: 'searchlane.query',
+          requestId: undefined,
+          metadata: { query, limit },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+        try {
+          const result = await runSearchQuery(query, { limit })
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'searchlane.query',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'SEARCH_ERROR', error instanceof Error ? error.message : 'Search failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/searchlane/news') {
+        if (!query) throw new HttpError(422, 'VALIDATION_ERROR', 'query is required.')
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'searchlane',
+          action: 'searchlane.news',
+          requestId: undefined,
+          metadata: { query, limit },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+        try {
+          const result = await runSearchNews(query, { limit })
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'searchlane.news',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'SEARCH_ERROR', error instanceof Error ? error.message : 'News search failed.')
+        }
+        return
+      }
+
+      if (path === '/v1/searchlane/research') {
+        if (!query) throw new HttpError(422, 'VALIDATION_ERROR', 'query is required.')
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'searchlane',
+          action: 'searchlane.research',
+          requestId: undefined,
+          metadata: { query, limit },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, {
+            ok: false,
+            error: 'insufficient_credits',
+            required: chargeResult.event.credits,
+            available: chargeResult.remainingCredits,
+          })
+          return
+        }
+        try {
+          const result = await runResearch(query, {
+            limit,
+            fetchPages: body.fetchPages !== false,
+          })
+          sendData(res, 200, {
+            ...result,
+            usage: {
+              credits: chargeResult.event.credits,
+              action: 'searchlane.research',
+              remaining: chargeResult.remainingCredits,
+            },
+          })
+        } catch (error) {
+          throw new HttpError(422, 'SEARCH_ERROR', error instanceof Error ? error.message : 'Research failed.')
+        }
+        return
+      }
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'SearchLane API route not found.', { method: req.method, path })
+  }
+
   // ─── ClipLoop API (API-key authenticated) ────────────────────────────────
 
   if (path.startsWith('/v1/cliploop/')) {

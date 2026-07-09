@@ -366,6 +366,26 @@ describe('Talocode MCP v0.1', () => {
       assert.ok(tool.inputSchema.required?.includes('rows'))
     })
 
+    it('searchlane tools reference correct routes', () => {
+      const health = TOOL_MAP.get('searchlane_health')!
+      assert.strictEqual(health.route, '/v1/searchlane/health')
+      assert.strictEqual(health.method, 'GET')
+      assert.strictEqual(health.estimatedCredits, null)
+
+      const query = TOOL_MAP.get('searchlane_query')!
+      assert.strictEqual(query.route, '/v1/searchlane/query')
+      assert.strictEqual(query.product, 'searchlane')
+      assert.strictEqual(query.estimatedCredits, 5)
+
+      const news = TOOL_MAP.get('searchlane_news')!
+      assert.strictEqual(news.route, '/v1/searchlane/news')
+      assert.strictEqual(news.estimatedCredits, 8)
+
+      const research = TOOL_MAP.get('searchlane_research')!
+      assert.strictEqual(research.route, '/v1/searchlane/research')
+      assert.strictEqual(research.estimatedCredits, 30)
+    })
+
     it('geolane tools reference correct routes', () => {
       const health = TOOL_MAP.get('geolane_health')!
       assert.strictEqual(health.route, '/v1/geolane/health')

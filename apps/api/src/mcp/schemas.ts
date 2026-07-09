@@ -440,6 +440,61 @@ export const geolaneCompareSchema: McpToolInputSchema = {
   additionalProperties: false,
 }
 
+export const searchlaneHealthSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const searchlanePricingSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const searchlaneCapabilitiesSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {},
+  additionalProperties: false,
+}
+
+export const searchlaneQuerySchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    query: { type: 'string', description: 'Search query string' },
+    q: { type: 'string', description: 'Alias for query' },
+    limit: { type: 'number', description: 'Max results (1–20, default 8)' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const searchlaneNewsSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    query: { type: 'string', description: 'News search query' },
+    q: { type: 'string', description: 'Alias for query' },
+    limit: { type: 'number', description: 'Max results (1–20)' },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
+export const searchlaneResearchSchema: McpToolInputSchema = {
+  type: 'object',
+  properties: {
+    query: { type: 'string', description: 'Research question or topic' },
+    q: { type: 'string', description: 'Alias for query' },
+    limit: { type: 'number', description: 'Max sources (3–12)' },
+    fetchPages: {
+      type: 'boolean',
+      description: 'Peek top result pages for richer snippets (default true)',
+    },
+  },
+  required: [],
+  additionalProperties: false,
+}
+
 export const webdatalaneFetchSchema: McpToolInputSchema = {
   type: 'object',
   properties: {

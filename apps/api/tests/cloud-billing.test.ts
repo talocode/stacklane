@@ -53,6 +53,9 @@ test('getPricingForAction returns correct credit cost', () => {
   assert.equal(getPricingForAction('geolane', 'geolane.llms_txt'), 20)
   assert.equal(getPricingForAction('geolane', 'geolane.citation_readiness'), 25)
   assert.equal(getPricingForAction('geolane', 'geolane.compare'), 50)
+  assert.equal(getPricingForAction('searchlane', 'searchlane.query'), 5)
+  assert.equal(getPricingForAction('searchlane', 'searchlane.research'), 30)
+  assert.equal(getPricingForAction('searchlane', 'searchlane.news'), 8)
 })
 
 test('getPricingForAction returns null for unknown product', () => {

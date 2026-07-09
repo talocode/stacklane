@@ -125,6 +125,34 @@ describe('Talocode SDK', () => {
       assert.strictEqual(typeof c.geolane.compare, 'function')
     })
 
+    it('has searchlane namespace', () => {
+      const c = new Talocode()
+      assert.ok(c.searchlane)
+      assert.strictEqual(typeof c.searchlane.health, 'function')
+      assert.strictEqual(typeof c.searchlane.query, 'function')
+      assert.strictEqual(typeof c.searchlane.news, 'function')
+      assert.strictEqual(typeof c.searchlane.research, 'function')
+    })
+
+    it('searchlane.query calls correct path', async () => {
+      let capturedUrl = ''
+      const origFetch = globalThis.fetch
+      globalThis.fetch = async (url: RequestInfo | URL) => {
+        capturedUrl = typeof url === 'string' ? url : url.toString()
+        return new Response(JSON.stringify({ results: [] }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      try {
+        const c = new Talocode({ apiKey: 'test-key' })
+        await c.searchlane.query({ query: 'hello' })
+        assert.ok(capturedUrl.includes('/v1/searchlane/query'))
+      } finally {
+        globalThis.fetch = origFetch
+      }
+    })
+
     it('geolane.audit calls correct path', async () => {
       let capturedUrl = ''
       const origFetch = globalThis.fetch
