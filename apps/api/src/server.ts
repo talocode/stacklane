@@ -2584,6 +2584,160 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     throw new HttpError(404, 'NOT_FOUND', 'VideoLane API route not found.', { method: req.method, path })
   }
 
+  // ─── DocuLane Office Document API (API-key authenticated) ─────────────────
+
+  if (path.startsWith('/v1/doculane/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+
+    if (req.method === 'GET' && path === '/v1/doculane/health') {
+      sendData(res, 200, {
+        ok: true,
+        service: 'doculane',
+        version: '0.1.0',
+        endpoints: [
+          'GET /v1/doculane/health',
+          'GET /v1/doculane/pricing',
+          'GET /v1/doculane/capabilities',
+          'POST /v1/doculane/read',
+          'POST /v1/doculane/write',
+          'POST /v1/doculane/info',
+        ],
+      })
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/doculane/pricing') {
+      sendData(res, 200, [
+        { feature: 'read', credits: 5 },
+        { feature: 'write', credits: 5 },
+        { feature: 'info', credits: 2 },
+      ])
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/doculane/capabilities') {
+      sendData(res, 200, {
+        supportedTypes: ['word', 'excel', 'powerpoint'],
+        features: ['read', 'write', 'info', 'convert'],
+        extensions: {
+          word: ['.docx', '.doc'],
+          excel: ['.xlsx', '.xls'],
+          powerpoint: ['.pptx', '.ppt'],
+        },
+      })
+      return
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req)
+
+      if (path === '/v1/doculane/read') {
+        const fileUrl = typeof body.fileUrl === 'string' ? body.fileUrl.trim() : ''
+        const fileType = typeof body.fileType === 'string' ? body.fileType.trim() : ''
+        if (!fileUrl || !fileType) throw new HttpError(422, 'VALIDATION_ERROR', 'fileUrl and fileType are required.')
+
+        const validTypes = ['word', 'excel', 'powerpoint']
+        if (!validTypes.includes(fileType)) throw new HttpError(422, 'VALIDATION_ERROR', `fileType must be one of: ${validTypes.join(', ')}`)
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'doculane',
+          action: 'doculane.read',
+          credits: 5,
+          requestId: undefined,
+          metadata: { fileUrl, fileType },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const { readFile } = await import('./services/doculane.js')
+          const result = await readFile({ fileUrl, fileType })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'doculane.read' } })
+        } catch (error) {
+          throw new HttpError(422, 'DOCULANE_ERROR', error instanceof Error ? error.message : 'Failed to read document.')
+        }
+        return
+      }
+
+      if (path === '/v1/doculane/write') {
+        const fileType = typeof body.fileType === 'string' ? body.fileType.trim() : ''
+        const content = body.content
+        if (!fileType || !content) throw new HttpError(422, 'VALIDATION_ERROR', 'fileType and content are required.')
+
+        const validTypes = ['word', 'excel', 'powerpoint']
+        if (!validTypes.includes(fileType)) throw new HttpError(422, 'VALIDATION_ERROR', `fileType must be one of: ${validTypes.join(', ')}`)
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'doculane',
+          action: 'doculane.write',
+          credits: 5,
+          requestId: undefined,
+          metadata: { fileType },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const { writeFile } = await import('./services/doculane.js')
+          const result = await writeFile({ fileType, content })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'doculane.write' } })
+        } catch (error) {
+          throw new HttpError(422, 'DOCULANE_ERROR', error instanceof Error ? error.message : 'Failed to write document.')
+        }
+        return
+      }
+
+      if (path === '/v1/doculane/info') {
+        const fileUrl = typeof body.fileUrl === 'string' ? body.fileUrl.trim() : ''
+        const fileType = typeof body.fileType === 'string' ? body.fileType.trim() : ''
+        if (!fileUrl || !fileType) throw new HttpError(422, 'VALIDATION_ERROR', 'fileUrl and fileType are required.')
+
+        const chargeResult = await chargeCredits({
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+          product: 'doculane',
+          action: 'doculane.info',
+          credits: 2,
+          requestId: undefined,
+          metadata: { fileUrl, fileType },
+        })
+        if (!chargeResult.success) {
+          sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+          return
+        }
+
+        try {
+          const { getFileInfo } = await import('./services/doculane.js')
+          const result = await getFileInfo({ fileUrl, fileType })
+          sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'doculane.info' } })
+        } catch (error) {
+          throw new HttpError(422, 'DOCULANE_ERROR', error instanceof Error ? error.message : 'Failed to get document info.')
+        }
+        return
+      }
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'DocuLane API route not found.', { method: req.method, path })
+  }
+
   throw new HttpError(404, 'NOT_FOUND', 'Route not found.', { method: req.method, path })
 }
 
