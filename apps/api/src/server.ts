@@ -2471,6 +2471,119 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     return
   }
 
+  // ─── VideoLane (API-key authenticated) ────────────────────────
+
+  if (path.startsWith('/v1/videolane/')) {
+    let rawKey: string
+    const authHeader = req.headers['authorization'] || ''
+    if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+      rawKey = authHeader.slice(7)
+    } else if (typeof req.headers['x-api-key'] === 'string') {
+      rawKey = req.headers['x-api-key'] as string
+    } else {
+      throw new HttpError(401, 'MISSING_API_KEY', 'Missing Talocode API key. Provide via Authorization: Bearer header or X-Api-Key header.')
+    }
+
+    const apiKey = await authenticateTalocodeApiKey(rawKey)
+
+    if (req.method === 'GET' && path === '/v1/videolane/health') {
+      const { checkHealth } = await import('./services/videolane.js')
+      const health = await checkHealth()
+      sendData(res, 200, { ok: health.ok, service: 'videolane', version: '0.1.0', server: health })
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/videolane/pricing') {
+      const { getVideoLanePricing } = await import('./services/videolane.js')
+      sendData(res, 200, getVideoLanePricing())
+      return
+    }
+
+    if (req.method === 'GET' && path === '/v1/videolane/capabilities') {
+      const { getVideoLaneCapabilities } = await import('./services/videolane.js')
+      sendData(res, 200, getVideoLaneCapabilities())
+      return
+    }
+
+    if (req.method === 'POST' && path === '/v1/videolane/plan') {
+      const body = await parseBody(req)
+      const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+      if (!prompt) throw new HttpError(422, 'VALIDATION_ERROR', 'prompt is required.')
+
+      const chargeResult = await chargeCredits({
+        projectId: apiKey.project_id,
+        apiKeyId: apiKey.id,
+        product: 'videolane',
+        action: 'videolane.plan',
+        credits: 30,
+        requestId: undefined,
+        metadata: { prompt: prompt.slice(0, 200) },
+      })
+      if (!chargeResult.success) {
+        sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+        return
+      }
+
+      const { generateVideoPlan } = await import('./services/videolane.js')
+      const result = await generateVideoPlan({ prompt, style: body.style, duration: body.duration })
+      if (!result.ok) throw new HttpError(422, 'VIDEOLANE_ERROR', result.error || 'Video plan generation failed.')
+      sendData(res, 200, { ok: true, plan: result.plan, usage: { credits: chargeResult.event.credits, action: 'videolane.plan' } })
+      return
+    }
+
+    if (req.method === 'POST' && path === '/v1/videolane/captions') {
+      const body = await parseBody(req)
+      const planPath = typeof body.plan === 'string' ? body.plan.trim() : ''
+      if (!planPath) throw new HttpError(422, 'VALIDATION_ERROR', 'plan path is required.')
+
+      const chargeResult = await chargeCredits({
+        projectId: apiKey.project_id,
+        apiKeyId: apiKey.id,
+        product: 'videolane',
+        action: 'videolane.captions',
+        credits: 10,
+        requestId: undefined,
+        metadata: {},
+      })
+      if (!chargeResult.success) {
+        sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+        return
+      }
+
+      const { generateCaptions } = await import('./services/videolane.js')
+      const result = await generateCaptions(planPath)
+      sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'videolane.captions' } })
+      return
+    }
+
+    if (req.method === 'POST' && path === '/v1/videolane/metadata') {
+      const body = await parseBody(req)
+      const title = typeof body.title === 'string' ? body.title.trim() : ''
+      if (!title) throw new HttpError(422, 'VALIDATION_ERROR', 'title is required.')
+
+      const chargeResult = await chargeCredits({
+        projectId: apiKey.project_id,
+        apiKeyId: apiKey.id,
+        product: 'videolane',
+        action: 'videolane.metadata',
+        credits: 10,
+        requestId: undefined,
+        metadata: { title: title.slice(0, 200) },
+      })
+      if (!chargeResult.success) {
+        sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+        return
+      }
+
+      const { generateMetadata } = await import('./services/videolane.js')
+      const result = await generateMetadata(title, body.outDir)
+      sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'videolane.metadata' } })
+      return
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'VideoLane API route not found.', { method: req.method, path })
+  }
+
   throw new HttpError(404, 'NOT_FOUND', 'Route not found.', { method: req.method, path })
 }
 
