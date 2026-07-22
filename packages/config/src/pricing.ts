@@ -159,6 +159,16 @@ export const TALOCODE_CLOUD_PRICING = {
       "replylane.feeds.migrate": 40,
       "replylane.export.markdown": 5,
       "replylane.export.json": 5,
+    },
+    flowlane: {
+      "flowlane.workflow.create": 10,
+      "flowlane.workflow.generate": 20,
+      "flowlane.workflow.validate": 5,
+      "flowlane.workflow.execute": 30,
+      "flowlane.template.get": 2,
+      "flowlane.export.claude": 10,
+      "flowlane.export.cursor": 10,
+      "flowlane.export.codra": 10
     }
   }
 } as const
