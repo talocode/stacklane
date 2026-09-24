@@ -3,6 +3,9 @@ import type {
   AuditEvent,
   CloudPricingTier,
   CloudTopupIntent,
+  CloudPaymentOptions,
+  TcodePurchaseQuote,
+  TcodePurchaseResult,
   CloudTransaction,
   CloudUsageEvent,
   CloudWallet,
@@ -118,10 +121,25 @@ export const apiClient = {
   listCloudPricing: () =>
     request<CloudPricingTier[]>('/api/v1/cloud/pricing'),
 
-  createCloudTopup: (projectId: string, amount: number) =>
+  createCloudTopupPack: (projectId: string, packId: string) =>
     request<CloudTopupIntent>('/api/v1/cloud/billing/topup', {
       method: 'POST',
-      body: JSON.stringify({ projectId, amount })
+      body: JSON.stringify({ projectId, packId })
+    }),
+
+  listCreditPacks: () =>
+    request<CloudPaymentOptions>('/api/v1/cloud/billing/packs'),
+
+  createTcodeQuote: (projectId: string, packId: string) =>
+    request<TcodePurchaseQuote>('/api/v1/cloud/tcode/purchase/quote', {
+      method: 'POST',
+      body: JSON.stringify({ projectId, packId }),
+    }),
+
+  completeTcodePurchase: (input: { projectId: string; quoteId: string; signature: string }) =>
+    request<TcodePurchaseResult>('/api/v1/cloud/tcode/purchase', {
+      method: 'POST',
+      body: JSON.stringify(input),
     }),
 
   createTcodeChallenge: (projectId: string) =>

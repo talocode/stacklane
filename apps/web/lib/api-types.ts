@@ -241,11 +241,76 @@ export type CloudTopupIntent = {
     id: string
     walletId: string
     amount: number
+    packId?: string | null
     status: string
   }
   checkoutUrl: string | null
   stripePublishableKey: string | null
   clientSecret: string | null
+}
+
+// ─── Credit packs and payment rails ───────────────────────────────
+
+export type CloudPackMethod = {
+  available: boolean
+  reason?: string
+  provider?: string
+  amountUsd?: number
+  raw?: string
+  tokens?: string
+  discountBps?: number
+}
+
+export type CloudCreditPack = {
+  id: string
+  credits: number
+  amountUsd: number
+  methods: {
+    card: CloudPackMethod
+    tcode: CloudPackMethod
+  }
+}
+
+export type CloudPaymentOptions = {
+  creditsPerUsd: number
+  treasuryAddress: string | null
+  tcode: {
+    available: boolean
+    reason?: string
+    discountBps?: number
+    dailyCreditCap?: number
+    enabledPacks?: string[]
+    priceUsd?: number | null
+    priceSource?: string | null
+    priceAsOf?: string | null
+    mint?: string
+  }
+  packs: CloudCreditPack[]
+}
+
+export type TcodePurchaseQuote = {
+  quoteId: string
+  packId: string
+  credits: number
+  amountUsd: number
+  discountBps: number
+  tcodeRaw: string
+  tcodeTokens: string
+  tcodePriceUsd: number
+  priceSource: string
+  mint: string
+  treasuryAddress: string
+  expiresAt: string
+}
+
+export type TcodePurchaseResult = {
+  credited: boolean
+  alreadyCredited: boolean
+  quoteId: string
+  credits: number
+  balance: number | null
+  wallet: CloudWallet | null
+  signature?: string
 }
 
 export type CloudTopupResult = {

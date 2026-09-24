@@ -7,9 +7,7 @@ import { MetaChip, PageScaffold, Panel } from '@/components/app-shell'
 import { TcodeHoldPanel } from '@/components/tcode-hold-panel'
 import { apiClient } from '@/lib/api-client'
 import { formatCredits, formatTimestamp, formatUsdFromCredits } from '@/lib/format'
-import type { CloudTransaction, CloudWallet, Project } from '@/lib/api-types'
-
-const PRESETS = [500, 1000, 2500, 5000]
+import type { CloudCreditPack, CloudTransaction, CloudWallet, Project, TcodePurchaseQuote } from '@/lib/api-types'
 
 export default function BillingPage() {
   const router = useRouter()
@@ -17,10 +15,17 @@ export default function BillingPage() {
   const [projectId, setProjectId] = useState('')
   const [wallet, setWallet] = useState<CloudWallet | null>(null)
   const [txns, setTxns] = useState<CloudTransaction[]>([])
-  const [amount, setAmount] = useState('500')
+  const [packs, setPacks] = useState<CloudCreditPack[]>([])
+  const [selectedPackId, setSelectedPackId] = useState('starter')
+  const [method, setMethod] = useState<'card' | 'tcode'>('card')
+  const [quote, setQuote] = useState<TcodePurchaseQuote | null>(null)
+  const [signature, setSignature] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+
+  const selectedPack = packs.find((p) => p.id === selectedPackId) || null
 
   useEffect(() => {
     apiClient
@@ -31,6 +36,13 @@ export default function BillingPage() {
       })
       .catch((e) => setError((e as Error).message))
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    apiClient
+      .listCreditPacks()
+      .then((options) => setPacks(options.packs))
+      .catch((e) => setError((e as Error).message))
   }, [])
 
   useEffect(() => {
@@ -60,16 +72,13 @@ export default function BillingPage() {
       .catch((e) => setError((e as Error).message))
   }
 
-  async function topUp() {
-    const credits = Number(amount)
-    if (!projectId || !credits || credits < 500) {
-      setError('Minimum top-up is 500 credits ($5.00).')
-      return
-    }
+  async function payByCard() {
+    if (!projectId || !selectedPack) return
     setBusy(true)
     setError(null)
+    setNotice(null)
     try {
-      const result = await apiClient.createCloudTopup(projectId, credits)
+      const result = await apiClient.createCloudTopupPack(projectId, selectedPack.id)
       if (result.checkoutUrl) {
         window.location.assign(result.checkoutUrl)
         return
@@ -80,7 +89,48 @@ export default function BillingPage() {
         )
         return
       }
-      setError('Checkout is not available for this top-up. Please try again later.')
+      setError('Checkout is not available for this pack. Please try again later.')
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function requestTcodeQuote() {
+    if (!projectId || !selectedPack) return
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      setQuote(await apiClient.createTcodeQuote(projectId, selectedPack.id))
+      setSignature('')
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function submitTcodePayment() {
+    if (!projectId || !quote || !signature.trim()) return
+    setBusy(true)
+    setError(null)
+    setNotice(null)
+    try {
+      const result = await apiClient.completeTcodePurchase({
+        projectId,
+        quoteId: quote.quoteId,
+        signature: signature.trim(),
+      })
+      setNotice(
+        result.alreadyCredited
+          ? 'That transaction was already credited. Nothing further was added.'
+          : `Credited ${formatCredits(result.credits)} credits.`,
+      )
+      setQuote(null)
+      setSignature('')
+      reloadWallet()
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -108,6 +158,7 @@ export default function BillingPage() {
       }
     >
       {error ? <div className="alert error">{error}</div> : null}
+      {notice ? <div className="alert success">{notice}</div> : null}
 
       <div className="grid-3">
         <div className="stat-card">
@@ -142,39 +193,127 @@ export default function BillingPage() {
               ))}
             </select>
           </div>
+
           <div className="field">
-            <label>Presets</label>
+            <label>Credit pack</label>
             <div className="actions">
-              {PRESETS.map((n) => (
-                <button key={n} type="button" className="btn" onClick={() => setAmount(String(n))}>
-                  {n} cr · {formatUsdFromCredits(n)}
+              {packs.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={p.id === selectedPackId ? 'btn primary' : 'btn'}
+                  onClick={() => {
+                    setSelectedPackId(p.id)
+                    setQuote(null)
+                  }}
+                >
+                  {p.credits.toLocaleString()} cr · {formatUsdFromCredits(p.credits)}
                 </button>
               ))}
             </div>
+            {packs.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>Loading packs…</p>
+            ) : null}
           </div>
+
           <div className="field">
-            <label htmlFor="amount">Credits (min 500)</label>
-            <input
-              id="amount"
-              type="number"
-              min={500}
-              step={100}
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
+            <label>Payment method</label>
+            <div className="actions">
+              <button
+                type="button"
+                className={method === 'card' ? 'btn primary' : 'btn'}
+                disabled={!selectedPack?.methods.card.available}
+                onClick={() => {
+                  setMethod('card')
+                  setQuote(null)
+                }}
+              >
+                Card
+              </button>
+              <button
+                type="button"
+                className={method === 'tcode' ? 'btn primary' : 'btn'}
+                disabled={!selectedPack?.methods.tcode.available}
+                onClick={() => {
+                  setMethod('tcode')
+                  setQuote(null)
+                }}
+              >
+                $TCODE
+              </button>
+            </div>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 0 }}>
-            You will pay {formatUsdFromCredits(Number(amount) || 0)} for {Number(amount) || 0} credits.
-          </p>
-          <button className="btn primary" type="button" disabled={busy || !projectId} onClick={() => void topUp()}>
-            {busy ? 'Starting checkout…' : 'Top up securely'}
-          </button>
+
+          {method === 'card' ? (
+            <>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 0 }}>
+                {selectedPack
+                  ? `Pay ${formatUsdFromCredits(selectedPack.credits)} for ${selectedPack.credits.toLocaleString()} credits.`
+                  : 'Select a pack to continue.'}
+              </p>
+              <button
+                className="btn primary"
+                type="button"
+                disabled={busy || !projectId || !selectedPack}
+                onClick={() => void payByCard()}
+              >
+                {busy ? 'Starting checkout…' : 'Pay by card'}
+              </button>
+            </>
+          ) : quote ? (
+            <>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 13 }}>
+                Send exactly <strong>{quote.tcodeTokens} $TCODE</strong> from your linked wallet to:
+              </p>
+              <p className="mono" style={{ fontSize: 12, wordBreak: 'break-all', marginTop: 0 }}>
+                {quote.treasuryAddress}
+              </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                The quote is held until {formatTimestamp(quote.expiresAt)}. Then paste the transaction
+                signature below.
+              </p>
+              <div className="field">
+                <label htmlFor="signature">Transaction signature</label>
+                <input
+                  id="signature"
+                  value={signature}
+                  onChange={(e) => setSignature(e.target.value)}
+                  placeholder="Paste the signature from your wallet"
+                />
+              </div>
+              <button
+                className="btn primary"
+                type="button"
+                disabled={busy || !signature.trim()}
+                onClick={() => void submitTcodePayment()}
+              >
+                {busy ? 'Verifying…' : 'I have sent it, credit my wallet'}
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 0 }}>
+                {selectedPack?.methods.tcode.tokens
+                  ? `You will send about ${selectedPack.methods.tcode.tokens} $TCODE. The exact amount is fixed when you request a quote.`
+                  : 'Select a pack to continue.'}
+              </p>
+              <button
+                className="btn primary"
+                type="button"
+                disabled={busy || !projectId || !selectedPack || !selectedPack.methods.tcode.available}
+                onClick={() => void requestTcodeQuote()}
+              >
+                {busy ? 'Pricing…' : 'Get $TCODE amount'}
+              </button>
+            </>
+          )}
         </Panel>
 
         <Panel title="How billing works">
           <ul style={{ margin: 0, paddingLeft: 18, color: 'var(--text-secondary)', display: 'grid', gap: 8 }}>
             <li>New wallets receive 100 free credits ($1).</li>
             <li>Minimum top-up is 500 credits ($5).</li>
+            <li>Pay by card or in $TCODE. Credits land in this same wallet either way.</li>
             <li>Each API action deducts credits before the request runs.</li>
             <li>Insufficient balance returns HTTP 402.</li>
             <li>Open-source local CLIs do not spend cloud credits.</li>
