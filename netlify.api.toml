@@ -1,0 +1,39 @@
+# Netlify deployment config for the Stacklane API, kept for a standalone API site.
+#
+# NOT the default config for this repo, on purpose. This file previously lived at
+# netlify.toml (the default path). Netlify reads the root config and resolves
+# netlify.toml settings over the site's own build settings, so the stacklane-web
+# site (base apps/web) had its publish path overridden by this file's
+# publish = "apps/api/dist", which resolved to apps/web/apps/api/dist and failed
+# every deploy. Renaming it removes that trap.
+#
+# To use this config, point a site at it explicitly via the site's
+# configuration_file_path.
+#
+# Note: api.talocode.site currently deploys from the stacklane-api-deploy repo, so
+# nothing uses this file today.
+
+[build]
+  command = "npm install -g pnpm@10 && pnpm install --frozen-lockfile && pnpm --filter @stacklane/api build"
+  publish = "apps/api/dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  external_node_modules = ["pg", "stripe", "drizzle-orm", "zod"]
+  included_files = ["apps/api/dist/**/*", "apps/api/src/**/*"]
+
+[functions.api]
+  timeout = 26
+
+[context.production]
+  environment = { NODE_ENV = "production" }
+
+[context.deploy-preview]
+  command = "pnpm install --frozen-lockfile"
+  publish = "apps/web/.next"
+
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api"
+  status = 200

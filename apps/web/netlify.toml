@@ -1,6 +1,10 @@
-# Talocode Cloud dashboard — https://dashboard.talocode.site
-# Deploy this app as a separate Netlify site with base directory apps/web
-# or monorepo base Stacklane + this config path.
+# Talocode Cloud dashboard for https://stacklane.talocode.site
+#
+# The app's own metadataBase in app/layout.tsx declares stacklane.talocode.site,
+# so that is its canonical domain. Deploy it as a separate Netlify site with base
+# directory apps/web AND configuration_file_path apps/web/netlify.toml. Both are
+# required: without the explicit config path Netlify reads the repo root config
+# instead and resolves publish against this base, producing a bad path.
 
 [build]
   command = "npm install && npm run build"
