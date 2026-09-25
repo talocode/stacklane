@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FirstSuccessChecklist } from '@/components/first-success-checklist'
 import Link from 'next/link'
 import { MetaChip, PageScaffold, Panel, StatusBadge } from '@/components/app-shell'
+import { FirstSuccessChecklist } from '@/components/first-success-checklist'
 import { apiClient } from '@/lib/api-client'
 import { formatCredits, formatTimestamp, formatUsdFromCredits } from '@/lib/format'
-import type { CloudWallet, Organization, Project } from '@/lib/api-types'
+import type { CloudWallet, Organization, Project, TcodeHoldings } from '@/lib/api-types'
 
 export default function OverviewPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [wallet, setWallet] = useState<CloudWallet | null>(null)
+  const [claimable, setClaimable] = useState<{ projectId: string; credits: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -25,6 +26,14 @@ export default function OverviewPage() {
             setWallet(await apiClient.getCloudWallet(p[0].id))
           } catch {
             setWallet(null)
+          }
+          try {
+            const holdings: TcodeHoldings = await apiClient.getTcodeHoldings(p[0].id)
+            if (holdings.tier && !holdings.claimedThisPeriod) {
+              setClaimable({ projectId: p[0].id, credits: holdings.tier.monthlyCredits })
+            }
+          } catch {
+            setClaimable(null)
           }
         }
       })
@@ -58,6 +67,20 @@ export default function OverviewPage() {
       }
     >
       {error ? <div className="alert error">{error}</div> : null}
+      {claimable ? (
+        <div
+          className="alert success"
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}
+        >
+          <span>
+            {claimable.credits.toLocaleString()} $TCODE credits are waiting on your first project. Claim them
+            free — no top-up needed.
+          </span>
+          <Link className="btn primary" href="/billing">
+            Claim credits
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid-4">
         <div className="stat-card">

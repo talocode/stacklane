@@ -7,20 +7,15 @@ import { HttpError } from '../../http'
  * Env:
  *   LEMONSQUEEZY_API_KEY       — API key (Bearer)
  *   LEMONSQUEEZY_STORE_ID      — Store numeric id
- *   LEMONSQUEEZY_VARIANT_ID    — Default variant id (product variant for credits)
  *   LEMONSQUEEZY_WEBHOOK_SECRET — Signing secret for webhooks
- *   LEMONSQUEEZY_VARIANT_MAP   — optional JSON map of credits→variantId e.g. {"500":"111","1000":"222"}
+ *   LEMONSQUEEZY_VARIANT_MAP   — required JSON map of fixed credits→variantId
  *   TALOCODE_CLOUD_SUCCESS_URL / TALOCODE_CLOUD_CANCEL_URL — redirect URLs
  */
 
 const API_BASE = 'https://api.lemonsqueezy.com/v1'
 
 export function isLemonSqueezyConfigured(): boolean {
-  return Boolean(
-    process.env.LEMONSQUEEZY_API_KEY &&
-      process.env.LEMONSQUEEZY_STORE_ID &&
-      process.env.LEMONSQUEEZY_VARIANT_ID,
-  )
+  return Boolean(process.env.LEMONSQUEEZY_API_KEY && process.env.LEMONSQUEEZY_STORE_ID && process.env.LEMONSQUEEZY_VARIANT_MAP)
 }
 
 function requireApiKey(): string {
@@ -35,39 +30,15 @@ function requireApiKey(): string {
   return key
 }
 
-function resolveVariantId(credits: number): string {
-  const mapRaw = process.env.LEMONSQUEEZY_VARIANT_MAP
-  if (mapRaw) {
-    try {
-      const map = JSON.parse(mapRaw) as Record<string, string>
-      if (map[String(credits)]) return String(map[String(credits)])
-    } catch {
-      /* fall through */
-    }
-  }
-  const variant = process.env.LEMONSQUEEZY_VARIANT_ID
-  if (!variant) {
-    throw new HttpError(
-      500,
-      'LEMONSQUEEZY_NOT_CONFIGURED',
-      'Set LEMONSQUEEZY_VARIANT_ID (or LEMONSQUEEZY_VARIANT_MAP for fixed packs).',
-    )
-  }
-  return variant
-}
-
 export async function createLemonSqueezyCheckout(input: {
-  topupId: string
-  projectId: string
-  amountUsd: number
-  credits: number
+  purchaseId: string
+  variantId: string
   successUrl?: string
   cancelUrl?: string
   email?: string
 }): Promise<{ checkoutId: string; checkoutUrl: string }> {
   const apiKey = requireApiKey()
   const storeId = process.env.LEMONSQUEEZY_STORE_ID!
-  const variantId = resolveVariantId(input.credits)
   const successUrl =
     input.successUrl ||
     process.env.TALOCODE_CLOUD_SUCCESS_URL ||
@@ -76,11 +47,6 @@ export async function createLemonSqueezyCheckout(input: {
     input.cancelUrl ||
     process.env.TALOCODE_CLOUD_CANCEL_URL ||
     'https://dashboard.talocode.site/billing?topup=cancel'
-
-  // custom_price is cents; works when the variant allows custom pricing / PWYW.
-  // If you use fixed variants via LEMONSQUEEZY_VARIANT_MAP, price comes from the variant.
-  const customPriceCents = Math.round(input.amountUsd * 100)
-  const useCustomPrice = !process.env.LEMONSQUEEZY_VARIANT_MAP
 
   const attributes: Record<string, unknown> = {
     checkout_options: {
@@ -91,16 +57,10 @@ export async function createLemonSqueezyCheckout(input: {
     checkout_data: {
       email: input.email || undefined,
       custom: {
-        topup_id: input.topupId,
-        project_id: input.projectId,
-        credits: String(input.credits),
-        amount_usd: String(input.amountUsd),
-        provider: 'lemonsqueezy',
+        purchase_id: input.purchaseId,
       },
     },
     product_options: {
-      name: `Talocode Cloud — ${input.credits.toLocaleString()} credits`,
-      description: `${input.credits.toLocaleString()} prepaid credits (1 credit = $0.01).`,
       redirect_url: successUrl,
       receipt_button_text: 'Return to dashboard',
       receipt_link_url: successUrl,
@@ -110,17 +70,13 @@ export async function createLemonSqueezyCheckout(input: {
     test_mode: process.env.LEMONSQUEEZY_TEST_MODE === 'true',
   }
 
-  if (useCustomPrice) {
-    attributes.custom_price = customPriceCents
-  }
-
   const body = {
     data: {
       type: 'checkouts',
       attributes,
       relationships: {
         store: { data: { type: 'stores', id: String(storeId) } },
-        variant: { data: { type: 'variants', id: String(variantId) } },
+        variant: { data: { type: 'variants', id: String(input.variantId) } },
       },
     },
   }

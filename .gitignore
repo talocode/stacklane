@@ -13,3 +13,7 @@ coverage
 apps/api/.migrations-cache
 apps/dashboard/
 .stacklane/
+
+# Generated architecture dump from the separate archwiki project. Output,
+# not source, and it duplicates that project's own repo.
+.archwiki/

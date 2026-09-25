@@ -120,10 +120,10 @@ async function run() {
       }
     }
 
-    if (serverContent.includes('/v1/router/models')) {
-      pass('Router models endpoint exists')
+    if (serverContent.includes('/v1/gateway/models')) {
+      pass('Gateway models endpoint exists')
     } else {
-      fail('Router models endpoint not found')
+      fail('Gateway models endpoint not found')
     }
 
     if (serverContent.includes('/api/v1/cloud/mcp/tools') || serverContent.includes('mcp/tools')) {

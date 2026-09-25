@@ -195,3 +195,26 @@ export async function markTopupFailed(id: string) {
   )
   return result.rows[0] || null
 }
+
+export async function recordPaymentWebhookEvent(input: {
+  provider: string
+  eventId: string
+  eventName: string
+  topupId?: string
+  payload: Record<string, unknown>
+  outcome: string
+}) {
+  await db.query(
+    `INSERT INTO cloud_payment_webhook_events (provider, event_id, event_name, topup_id, payload, processed_at, outcome)
+     VALUES ($1, $2, $3, $4, $5, now(), $6)
+     ON CONFLICT (provider, event_id) DO NOTHING`,
+    [
+      input.provider,
+      input.eventId,
+      input.eventName,
+      input.topupId || null,
+      JSON.stringify(input.payload),
+      input.outcome,
+    ],
+  )
+}

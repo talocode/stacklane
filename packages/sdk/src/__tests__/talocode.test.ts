@@ -85,17 +85,22 @@ describe('Talocode SDK', () => {
       assert.strictEqual(typeof c.codra.plan, 'function')
     })
 
-    it('has placeholder namespaces (tradia, worklane)', () => {
+    it('has tradia namespace with real methods', () => {
       const c = new Talocode()
       assert.ok(c.tradia)
+      assert.strictEqual(typeof c.tradia.health, 'function')
+      assert.strictEqual(typeof c.tradia.marketAnalyze, 'function')
+      assert.strictEqual(typeof c.tradia.performanceAnalyze, 'function')
+    })
+
+    it('has placeholder namespace (worklane)', () => {
+      const c = new Talocode()
       assert.ok(c.worklane)
-      assert.strictEqual(typeof c.tradia.analyze, 'function')
       assert.strictEqual(typeof c.worklane.run, 'function')
     })
 
     it('placeholder namespaces throw TalocodeNotImplementedError', async () => {
       const c = new Talocode()
-      await assert.rejects(() => c.tradia.analyze(), TalocodeNotImplementedError)
       await assert.rejects(() => c.worklane.run(), TalocodeNotImplementedError)
     })
 

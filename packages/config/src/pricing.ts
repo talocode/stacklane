@@ -176,9 +176,9 @@ export const TALOCODE_CLOUD_PRICING = {
       "maillane.send.text": 2,
       "maillane.send.html": 3,
       "maillane.send.attachment": 5,
-      "maillane.account.connect": 0,
-      "maillane.account.list": 0,
-      "maillane.stats.get": 0
+      "maillane.account.connect": 1,
+      "maillane.account.list": 1,
+      "maillane.stats.get": 1
     },
     doculane: {
       "doculane.read": 5,
@@ -195,7 +195,7 @@ export const TALOCODE_CLOUD_PRICING = {
       "reliabilitylane.retry": 1,
       "reliabilitylane.verify": 1,
       "reliabilitylane.incident": 2,
-      "reliabilitylane.antipatterns": 0
+      "reliabilitylane.antipatterns": 1
     },
     verifylane: {
       "verifylane.secrets": 3,
@@ -203,7 +203,22 @@ export const TALOCODE_CLOUD_PRICING = {
       "verifylane.quality": 3,
       "verifylane.code": 8,
       "verifylane.diff": 8,
-      "verifylane.agent-output": 5
+      "verifylane.agent-output": 5,
+      "verifylane.email": 1,
+      "verifylane.phone": 1,
+      "verifylane.ip": 1,
+      "verifylane.data": 2
+    },
+    llmgateway: {
+      "llmgateway.models": 1,
+      "llmgateway.chat": 10,
+      "llmgateway.usage": 1,
+      "llmgateway.keys": 1
+    },
+    datalane: {
+      "datalane.analyze": 5,
+      "datalane.anchor": 2,
+      "datalane.render": 1
     },
     policylane: {
       "policylane.check": 2,

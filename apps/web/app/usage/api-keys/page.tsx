@@ -16,6 +16,7 @@ export default function ApiKeysPage() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     apiClient
@@ -37,20 +38,64 @@ export default function ApiKeysPage() {
       .catch((e) => setError((e as Error).message))
   }, [slug])
 
+  async function ensureProject(): Promise<string> {
+    if (slug) return slug
+
+    // If projects exist in state, select the first one
+    if (projects.length > 0 && projects[0]) {
+      setSlug(projects[0].slug)
+      return projects[0].slug
+    }
+
+    // Otherwise check/create organization
+    const orgs = await apiClient.listOrganizations()
+    let orgId = orgs[0]?.id
+    if (!orgId) {
+      const createdOrg = await apiClient.createOrganization({ name: 'Personal' })
+      orgId = createdOrg.id
+    }
+
+    // Create default project
+    const createdProject = await apiClient.createProject({
+      name: 'Default',
+      organizationId: orgId,
+      status: 'ready',
+      region: 'global',
+      description: 'Default project for API keys',
+    })
+
+    const updatedProjects = await apiClient.listProjects()
+    setProjects(updatedProjects)
+    setSlug(createdProject.slug)
+    return createdProject.slug
+  }
+
   async function createKey(e: FormEvent) {
     e.preventDefault()
-    if (!slug) return
     setBusy(true)
     setError(null)
     setSecret(null)
     try {
-      const result = await apiClient.createProjectApiKey(slug, { name: name.trim() })
+      const targetSlug = await ensureProject()
+      const keyName = name.trim() || 'production'
+      const result = await apiClient.createProjectApiKey(targetSlug, { name: keyName })
       setSecret(result.secret)
-      setKeys(await apiClient.listProjectApiKeys(slug))
+      setKeys(await apiClient.listProjectApiKeys(targetSlug))
     } catch (err) {
       setError((err as Error).message)
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function copySecret() {
+    if (!secret) return
+    try {
+      await navigator.clipboard.writeText(secret)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback
     }
   }
 
@@ -78,28 +123,41 @@ export default function ApiKeysPage() {
 
       <div className="grid-2">
         <Panel title="Create key">
-          {projects.length === 0 && !loading ? (
-            <div className="alert">
-              No projects yet. <Link href="/new-project">Create a project</Link> first.
-            </div>
-          ) : null}
           <form onSubmit={createKey}>
             <div className="field">
               <label htmlFor="project">Project</label>
-              <select id="project" value={slug} onChange={(e) => setSlug(e.target.value)} required>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.slug}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              {projects.length > 0 ? (
+                <select id="project" value={slug} onChange={(e) => setSlug(e.target.value)} required>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.slug}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  id="project"
+                  type="text"
+                  readOnly
+                  disabled
+                  value="Default Project (auto-created)"
+                  style={{ opacity: 0.8 }}
+                />
+              )}
             </div>
             <div className="field">
-              <label htmlFor="name">Name</label>
-              <input id="name" value={name} onChange={(e) => setName(e.target.value)} minLength={2} required />
+              <label htmlFor="name">Key Name</label>
+              <input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="production"
+                minLength={2}
+                required
+              />
             </div>
-            <button className="btn primary" type="submit" disabled={busy || !slug}>
-              {busy ? 'Creating…' : 'Create key'}
+            <button className="btn primary" type="submit" disabled={busy || loading}>
+              {busy ? 'Creating key…' : 'Create API key'}
             </button>
           </form>
           {secret ? (
@@ -112,9 +170,9 @@ export default function ApiKeysPage() {
                 className="btn"
                 type="button"
                 style={{ marginTop: 10 }}
-                onClick={() => void navigator.clipboard.writeText(secret)}
+                onClick={() => void copySecret()}
               >
-                Copy secret
+                {copied ? '✓ Copied to clipboard' : 'Copy secret'}
               </button>
             </div>
           ) : null}

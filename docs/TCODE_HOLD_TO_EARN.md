@@ -9,3 +9,16 @@ Why now: public dashboard claim was announced; the previous API accepted a clien
 Signed-in project owners link one Solana wallet by signing a server nonce, then claim at most one monthly credit grant from on-chain `$TCODE` holdings. Grants write `stacklane.wallets.balance_credits` and a `tcode_tier` transaction.
 
 Live API implementation: `stacklane-api-deploy` (`/api/v1/cloud/tcode/*`). Dashboard UI: Wallet page (`apps/web`).
+
+Public token page: https://talocode.site/tcode.html
+
+Contributor airdrops and a redemption floor are not implemented. Do not describe them as live.
+
+## Dashboard UI (revenue pass)
+
+- Wallet page embeds `TcodeHoldPanel`: shows the full 4-tier ladder with the
+  current tier highlighted and the token gap to the next tier.
+- Below-tier and gap states link out to Jupiter to buy $TCODE.
+- Overview page shows an unclaimed-credits banner for the first project when
+  its tier grant for the current UTC month is still unclaimed, deep-linking
+  to Wallet. Tier numbers mirror `TCODE_TIERS` in `tcode.mjs`; keep in sync.

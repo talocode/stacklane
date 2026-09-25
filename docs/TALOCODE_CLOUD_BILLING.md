@@ -6,8 +6,6 @@ Prepaid wallet billing system for Talocode Cloud services.
 
 ## Credits
 
-## Credits
-
 - 1 credit = $0.01 USD
 - New projects receive 100 free credits ($1.00)
 - Minimum top-up: 500 credits ($5.00)
@@ -67,12 +65,40 @@ The central pricing configuration is in `packages/config/src/pricing.ts`.
 - Keys can be revoked
 - Usage is tracked via `last_used_at` timestamp
 
-## Top-ups
+## Credit Packs And Payment Events
 
-- Stripe Embedded Checkout for credit card payments
-- Manual top-ups available in development
-- Webhook-based confirmation for Stripe payments
-- Idempotent: repeated webhook events don't double-credit
+Checkout accepts only `projectId` and a server-owned `packId`: `starter` (500), `builder` (1,000), `growth` (2,500), `scale` (5,000), `pro` (10,000), or `studio` (25,000) credits. Variant IDs are configured with `LEMONSQUEEZY_VARIANT_MAP`; callers cannot supply an amount, credits, or variant that affects the purchase.
+
+A durable `stacklane.billing_purchases` row is written before a checkout is created. Checkout custom data contains only `purchase_id`, and fixed variants never use custom pricing.
+
+The webhook verifies the raw HMAC before JSON parsing. The payment event is inserted and claimed inside the same transaction that locks the purchase, validates the configured store and variant, writes an immutable ledger entry, changes the wallet once, and marks the event processed. Duplicate event IDs are no-ops.
+
+`order_refunded` debits credited wallet funds. A full refund debits all purchase credits. Partial refunds debit `floor(credits * cumulative_refunded_cents / purchase_amount_cents)` minus the prior cumulative allocation, making sequential partial refunds deterministic and preventing duplicate event debits. If a verified refund would overdraw the wallet, the wallet and credit ledger are unchanged; the payment event and one durable `refund_requires_review` liability record are committed for investigation instead.
+
+`cloud_topups` is retained for historical reads only. New checkout or webhook code must not create or fulfill it. Legacy confirm endpoints return `410`.
+
+## Two Payment Rails
+
+Credits can be bought two ways, and both must quote the same pack at the same credits:
+
+| Method | Rail | Notes |
+|---|---|---|
+| Card | provider checkout, fixed pack | `POST /api/v1/cloud/billing/topup` with `{ projectId, packId }` |
+| $TCODE | on-chain transfer, verified then credited | `POST /api/v1/cloud/tcode/purchase/quote`, then `POST /api/v1/cloud/tcode/purchase` |
+
+`GET /api/v1/cloud/billing/packs` returns the catalog with both methods per pack, including whether
+each can actually complete, so a client never renders an option that cannot finish.
+
+Pack values are defined once, in `credit-packs.mjs` on the deployed function and
+`apps/api/src/services/payments/credit-packs.ts` here. Keep the two in step: a pack must never cost
+different credits depending on the rail or the service that served the request.
+
+The deployed function also still accepts a legacy `amount` on the fiat route for older clients.
+That path is deprecated, and pack requests never use custom pricing.
+
+## Rollback
+
+Migration `0007_stacklane_billing_hardening.sql` is forward-only. Do not drop financial records to roll back an application release: stop new checkout creation, retain the tables and ledger for audit, and deploy a corrective forward migration if necessary.
 
 ## Usage Events
 
@@ -93,8 +119,9 @@ Every charge creates a usage event with:
 | `/api/v1/cloud/projects/{id}/wallet` | GET | Session | Wallet balance |
 | `/api/v1/cloud/projects/{id}/api-keys` | GET/POST | Session | API keys |
 | `/api/v1/cloud/projects/{id}/usage` | GET | Session | Usage history |
-| `/api/v1/cloud/projects/{id}/topups` | GET/POST | Session | Top-ups |
-| `/api/v1/cloud/billing/stripe/webhook` | POST | Stripe | Stripe events |
+| `/api/v1/cloud/projects/{id}/topups` | GET/POST | Session | Historical top-ups / fixed-pack checkout |
+| `/api/v1/cloud/billing/topup` | POST | Session | Fixed-pack checkout (`projectId`, `packId`) |
+| `/api/v1/cloud/billing/lemonsqueezy/webhook` | POST | Provider | Verified payment events |
 
 ## Demo Flow
 

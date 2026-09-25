@@ -8,11 +8,21 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const migrationsDir = path.join(__dirname, '..', 'migrations')
 const databaseUrl = process.env.DATABASE_URL || 'postgres://stacklane:stacklane@localhost:5432/stacklane'
+const schema = /^[a-z][a-z0-9_]*$/.test(process.env.DATABASE_SCHEMA || '')
+  ? process.env.DATABASE_SCHEMA
+  : 'stacklane'
 
-const client = new Client({ connectionString: databaseUrl })
+const client = new Client({
+  connectionString: databaseUrl,
+  ssl: process.env.DATABASE_SSL_REJECT_UNAUTHORIZED === 'false'
+    ? { rejectUnauthorized: false }
+    : undefined,
+})
 
 try {
   await client.connect()
+  await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`)
+  await client.query(`SET search_path TO ${schema}, public`)
   await client.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       id TEXT PRIMARY KEY,
@@ -26,12 +36,18 @@ try {
   const files = fs
     .readdirSync(migrationsDir)
     .filter((file) => file.endsWith('.sql'))
+    // The legacy init migration conflicts with the current control-plane schema.
+    .filter((file) => file !== '0001_init_control_plane.sql')
     .sort((a, b) => a.localeCompare(b))
 
   for (const file of files) {
     if (applied.has(file)) continue
 
-    const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8')
+    const sql = fs
+      .readFileSync(path.join(migrationsDir, file), 'utf-8')
+      .replaceAll('stacklane.', `${schema}.`)
+      .replace('CREATE SCHEMA IF NOT EXISTS stacklane;', `CREATE SCHEMA IF NOT EXISTS ${schema};`)
+      .replace('SET search_path TO stacklane, public;', `SET search_path TO ${schema}, public;`)
     await client.query('BEGIN')
     await client.query(sql)
     await client.query('INSERT INTO schema_migrations (id) VALUES ($1)', [file])

@@ -41,6 +41,17 @@ function shortAddress(address: string) {
   return `${address.slice(0, 4)}…${address.slice(-4)}`
 }
 
+// Tier ladder mirrors the server source of truth (stacklane-api-deploy
+// netlify/functions/tcode.mjs TCODE_TIERS). Keep in sync if tiers change.
+const TIER_LADDER = [
+  { key: 'explorer', minTokens: 1, monthlyCredits: 1000 },
+  { key: 'builder', minTokens: 100, monthlyCredits: 10000 },
+  { key: 'ecosystem', minTokens: 1000, monthlyCredits: 100000 },
+  { key: 'partner', minTokens: 5000, monthlyCredits: 500000 },
+]
+
+const JUPITER_BUY_URL = 'https://jup.ag/swap/SOL-6ptxwABxQz8zMhwhiPeVgRgWjGMdVcEBFBv8v8C3ory'
+
 function periodLabel(period: string) {
   const [year, month] = period.split('-').map(Number)
   if (!year || !month) return period
@@ -144,6 +155,13 @@ export function TcodeHoldPanel({
 
   const canClaim = Boolean(holdings?.tier) && !holdings?.claimedThisPeriod && status === 'idle'
 
+  const currentTierIndex = holdings?.tier
+    ? TIER_LADDER.findIndex((t) => t.key === holdings.tier?.key)
+    : -1
+  const nextTier = currentTierIndex >= 0 ? TIER_LADDER[currentTierIndex + 1] : TIER_LADDER[0]
+  const tokensHeld = Math.floor(Number(holdings?.tcodeTokens) || 0)
+  const tokensToNext = nextTier ? Math.max(nextTier.minTokens - tokensHeld, 0) : 0
+
   return (
     <Panel title="$TCODE hold-to-earn">
       <p style={{ marginTop: 0, color: 'var(--text-secondary)' }}>
@@ -190,6 +208,56 @@ export function TcodeHoldPanel({
           {status === 'loading' ? 'Checking linked wallet…' : 'No Solana wallet linked to this project yet.'}
         </p>
       )}
+
+      <div style={{ marginTop: 18 }}>
+        <div className="label" style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8 }}>
+          Hold-to-earn tiers
+        </div>
+        <div style={{ display: 'grid', gap: 8 }}>
+          {TIER_LADDER.map((t, i) => {
+            const isCurrent = i === currentTierIndex
+            return (
+              <div
+                key={t.key}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  border: `1px solid ${isCurrent ? 'var(--accent, #38bdf8)' : 'var(--border, rgba(255,255,255,0.10))'}`,
+                  borderRadius: 12,
+                  padding: '10px 14px',
+                  background: isCurrent ? 'rgba(56,189,248,0.08)' : 'transparent',
+                }}
+              >
+                <span style={{ textTransform: 'capitalize', fontWeight: isCurrent ? 700 : 400 }}>
+                  {t.key}
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>
+                    {' '}· {t.minTokens.toLocaleString()}+ $TCODE
+                  </span>
+                </span>
+                <strong>{t.monthlyCredits.toLocaleString()} / mo</strong>
+              </div>
+            )
+          })}
+        </div>
+        {nextTier && tokensToNext > 0 ? (
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '10px 0 0' }}>
+            Hold {tokensToNext.toLocaleString()} more $TCODE to reach {nextTier.key} ·{' '}
+            <a href={JUPITER_BUY_URL} target="_blank" rel="noreferrer">
+              Buy $TCODE
+            </a>
+          </p>
+        ) : null}
+        {!holdings?.tier ? (
+          <p style={{ color: 'var(--text-secondary)', fontSize: 14, margin: '10px 0 0' }}>
+            No tier yet — hold at least 1 $TCODE, or{' '}
+            <a href={JUPITER_BUY_URL} target="_blank" rel="noreferrer">
+              buy $TCODE
+            </a>
+            .
+          </p>
+        ) : null}
+      </div>
 
       <div className="actions" style={{ marginTop: 16 }}>
         <button

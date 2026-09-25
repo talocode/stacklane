@@ -1,3 +1,6 @@
+CREATE SCHEMA IF NOT EXISTS stacklane;
+SET search_path TO stacklane, public;
+
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,

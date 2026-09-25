@@ -117,8 +117,6 @@ import {
   listCloudUsageEvents,
   getCloudUsageSummary,
   listCloudTopups,
-  createCloudTopup,
-  findTopupById
 } from './repositories/cloud-usage-repo'
 import {
   toCloudProjectResponse,
@@ -134,18 +132,12 @@ import {
   grantFreeCredits,
   checkBalance,
   getWalletWithTransactions,
-  createTopupIntent,
-  confirmTopup,
-  confirmStripeTopup,
-  confirmLemonSqueezyTopup,
+  createPurchaseCheckout,
+  fulfillLemonSqueezyEvent,
   parseLemonSqueezyWebhook,
-  TALOCODE_CLOUD_PRICING,
   listAllPricing,
   ensureWallet,
 } from './services/cloud-billing'
-import {
-  constructStripeWebhookEvent
-} from './services/payments/stripe-provider'
 const SESSION_TTL_DAYS = 7
 const WORKER_INTERVAL_MS = Number(process.env.PROVISIONING_WORKER_INTERVAL_MS || 3000)
 const adapter = new MockProvisioningAdapter()
@@ -1941,6 +1933,203 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     return authenticateTalocodeApiKey(rawKey)
   }
 
+  if (path.startsWith('/v1/gateway/')) {
+    const apiKey = await controlPlaneAuth()
+    const {
+      loadGatewayConfig,
+      getGatewayUsage,
+      getLLMGatewayPricing,
+      getLLMGatewayCapabilities,
+      proxyChatCompletion,
+      LLMGATEWAY_VERSION,
+      GatewayInputError,
+      GatewayUpstreamError,
+    } = await import('./services/llmgateway.js')
+
+    if (req.method === 'GET' && path === '/v1/gateway/health') {
+      const config = loadGatewayConfig()
+      sendData(res, 200, {
+        ok: true,
+        service: 'llmgateway',
+        version: LLMGATEWAY_VERSION,
+        providerConfigured: Boolean(config),
+        endpoints: getLLMGatewayCapabilities().endpoints,
+      })
+      return
+    }
+    if (req.method === 'GET' && path === '/v1/gateway/pricing') {
+      sendData(res, 200, getLLMGatewayPricing())
+      return
+    }
+    if (req.method === 'GET' && path === '/v1/gateway/capabilities') {
+      sendData(res, 200, getLLMGatewayCapabilities())
+      return
+    }
+    if (req.method === 'GET' && path === '/v1/gateway/models') {
+      const chargeResult = await chargeCredits({
+        projectId: apiKey.project_id,
+        apiKeyId: apiKey.id,
+        product: 'llmgateway',
+        action: 'llmgateway.models',
+      })
+      if (!chargeResult.success) {
+        sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+        return
+      }
+      const config = loadGatewayConfig()
+      const models = config ? Array.from(new Set(config.providers.flatMap((p) => p.models))) : []
+      sendData(res, 200, {
+        object: 'list',
+        data: models.map((id) => ({ id, object: 'model', owned_by: 'llmgateway' })),
+        usage: { credits: chargeResult.event.credits, action: 'llmgateway.models', remaining: chargeResult.remainingCredits },
+      })
+      return
+    }
+    if (req.method === 'GET' && path === '/v1/gateway/usage') {
+      const chargeResult = await chargeCredits({
+        projectId: apiKey.project_id,
+        apiKeyId: apiKey.id,
+        product: 'llmgateway',
+        action: 'llmgateway.usage',
+      })
+      if (!chargeResult.success) {
+        sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+        return
+      }
+      const result = getGatewayUsage(apiKey.project_id)
+      sendData(res, 200, {
+        object: 'usage',
+        ...result,
+        usage: { credits: chargeResult.event.credits, action: 'llmgateway.usage', remaining: chargeResult.remainingCredits },
+      })
+      return
+    }
+    if (req.method === 'POST' && path === '/v1/gateway/chat/completions') {
+      const config = loadGatewayConfig()
+      if (!config) throw new HttpError(503, 'GATEWAY_NOT_CONFIGURED', 'No upstream LLM provider is configured (LLMGATEWAY_PROVIDERS).')
+
+      const body = await parseBody(req)
+      const chargeResult = await chargeCredits({
+        projectId: apiKey.project_id,
+        apiKeyId: apiKey.id,
+        product: 'llmgateway',
+        action: 'llmgateway.chat',
+        metadata: { model: typeof body.model === 'string' ? body.model : '' },
+      })
+      if (!chargeResult.success) {
+        sendData(res, 402, { ok: false, error: 'insufficient_credits', required: chargeResult.event.credits, available: chargeResult.remainingCredits })
+        return
+      }
+
+      try {
+        const result = await proxyChatCompletion({
+          config,
+          body,
+          projectId: apiKey.project_id,
+          apiKeyId: apiKey.id,
+        })
+        let payload: unknown = result.body
+        try {
+          payload = JSON.parse(result.body)
+        } catch {
+          // keep raw text if upstream returned non-JSON
+        }
+        sendData(res, result.status, {
+          ...(payload as object),
+          usage: { credits: chargeResult.event.credits, action: 'llmgateway.chat', remaining: chargeResult.remainingCredits },
+        })
+      } catch (error) {
+        if (error instanceof GatewayInputError) {
+          throw new HttpError(422, 'VALIDATION_ERROR', error.message)
+        }
+        throw new HttpError(502, 'UPSTREAM_ERROR', error instanceof Error ? error.message : 'Upstream provider failed.')
+      }
+      return
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'LLM Gateway route not found.', { method: req.method, path })
+  }
+
+  if (path.startsWith('/v1/datalane/')) {
+    const apiKey = await controlPlaneAuth()
+    const {
+      buildDataLaneChart,
+      getDataLanePricing,
+      getDataLaneCapabilities,
+      DATALANE_VERSION,
+    } = await import('./services/datalane.js')
+
+    if (req.method === 'GET' && path === '/v1/datalane/health') {
+      sendData(res, 200, {
+        ok: true,
+        service: 'datalane',
+        version: DATALANE_VERSION,
+        endpoints: getDataLaneCapabilities().endpoints,
+      })
+      return
+    }
+    if (req.method === 'GET' && path === '/v1/datalane/pricing') {
+      sendData(res, 200, getDataLanePricing())
+      return
+    }
+    if (req.method === 'GET' && path === '/v1/datalane/capabilities') {
+      sendData(res, 200, getDataLaneCapabilities())
+      return
+    }
+
+    const runDataLane = async (action: string, runner: () => unknown) => {
+      const chargeResult = await chargeCredits({
+        projectId: apiKey.project_id,
+        apiKeyId: apiKey.id,
+        product: 'datalane',
+        action,
+      })
+      if (!chargeResult.success) {
+        sendData(res, 402, {
+          ok: false,
+          error: 'insufficient_credits',
+          required: chargeResult.event.credits,
+          available: chargeResult.remainingCredits,
+        })
+        return
+      }
+      try {
+        const result = runner()
+        sendData(res, 200, {
+          ...(result as object),
+          usage: {
+            credits: chargeResult.event.credits,
+            action,
+            remaining: chargeResult.remainingCredits,
+          },
+        })
+      } catch (e) {
+        throw new HttpError(422, 'VALIDATION_ERROR', e instanceof Error ? e.message : 'datalane failed')
+      }
+    }
+
+    if (req.method === 'POST' && path === '/v1/datalane/analyze') {
+      const body = await parseBody(req)
+      const intent = typeof body.intent === 'string' ? body.intent : ''
+      const rows = Array.isArray(body.rows) ? body.rows : null
+      if (!intent) throw new HttpError(422, 'VALIDATION_ERROR', 'intent is required.')
+      if (!rows) throw new HttpError(422, 'VALIDATION_ERROR', 'rows array is required.')
+      await runDataLane('datalane.analyze', () => buildDataLaneChart({ intent, rows: rows as Array<Record<string, unknown>> }))
+      return
+    }
+    if (req.method === 'POST' && path === '/v1/datalane/render') {
+      const body = await parseBody(req)
+      const spec = body.spec && typeof body.spec === 'object' ? body.spec : null
+      const rows = Array.isArray(body.rows) ? body.rows : null
+      if (!spec) throw new HttpError(422, 'VALIDATION_ERROR', 'spec is required.')
+      if (!rows) throw new HttpError(422, 'VALIDATION_ERROR', 'rows array is required.')
+      await runDataLane('datalane.render', () => buildDataLaneChart({ spec: spec as never, rows: rows as Array<Record<string, unknown>> }))
+      return
+    }
+
+    throw new HttpError(404, 'NOT_FOUND', 'DataLane API route not found.', { method: req.method, path })
+  }
+
   if (path.startsWith('/v1/verifylane/')) {
     const apiKey = await controlPlaneAuth()
     const {
@@ -1950,6 +2139,10 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       verifyCode,
       verifyDiff,
       verifyAgentOutput,
+      verifyEmail,
+      verifyPhone,
+      verifyIp,
+      verifyData,
       getVerifyLanePricing,
       getVerifyLaneCapabilities,
       VERIFYLANE_VERSION,
@@ -2037,6 +2230,34 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       await runVerify('verifylane.agent-output', () => verifyAgentOutput(body as any))
       return
     }
+    if (req.method === 'POST' && path === '/v1/verifylane/email') {
+      const body = await parseBody(req)
+      const value = typeof body.value === 'string' ? body.value : ''
+      if (!value) throw new HttpError(422, 'VALIDATION_ERROR', 'value is required.')
+      await runVerify('verifylane.email', () => verifyEmail(value))
+      return
+    }
+    if (req.method === 'POST' && path === '/v1/verifylane/phone') {
+      const body = await parseBody(req)
+      const value = typeof body.value === 'string' ? body.value : ''
+      if (!value) throw new HttpError(422, 'VALIDATION_ERROR', 'value is required.')
+      await runVerify('verifylane.phone', () => verifyPhone(value, { country: typeof body.country === 'string' ? body.country : undefined }))
+      return
+    }
+    if (req.method === 'POST' && path === '/v1/verifylane/ip') {
+      const body = await parseBody(req)
+      const value = typeof body.value === 'string' ? body.value : ''
+      if (!value) throw new HttpError(422, 'VALIDATION_ERROR', 'value is required.')
+      await runVerify('verifylane.ip', () => verifyIp(value))
+      return
+    }
+    if (req.method === 'POST' && path === '/v1/verifylane/data') {
+      const body = await parseBody(req)
+      const values = Array.isArray(body.values) ? body.values : null
+      if (!values) throw new HttpError(422, 'VALIDATION_ERROR', 'values array is required.')
+      await runVerify('verifylane.data', () => verifyData({ values: values as any }))
+      return
+    }
 
     throw new HttpError(404, 'NOT_FOUND', 'VerifyLane API route not found.', { method: req.method, path })
   }
@@ -2116,7 +2337,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
         })
         return
       }
-      const result = redact(body.value ?? body.payload, body.patterns)
+      const result = redact(body.value ?? body.payload, body.patterns as string[] | undefined)
       sendData(res, 200, {
         product: 'policylane',
         version: POLICYLANE_VERSION,
@@ -2201,7 +2422,12 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
         actor: body.actor ? String(body.actor) : undefined,
         defaultEffect: body.defaultEffect === 'allow' ? 'allow' : 'deny',
         policies,
-        spend: body.spend,
+        spend: body.spend as {
+          balanceCredits?: number
+          costCredits?: number
+          dailySpent?: number
+          dailyLimit?: number
+        },
         payload: body.payload,
       })
       sendData(res, 200, {
@@ -2506,50 +2732,8 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
     try {
       const event = parseLemonSqueezyWebhook(rawBody, signature)
-      const result = await confirmLemonSqueezyTopup(event)
-      sendJson(res, 200, { received: true, credited: Boolean(result && !('already' in result && result.already)) })
-    } catch (error) {
-      if (error instanceof HttpError) {
-        sendJson(res, error.statusCode, { error: { code: error.code, message: error.message } })
-        return
-      }
-      sendJson(res, 400, { error: { code: 'WEBHOOK_ERROR', message: 'Webhook processing failed.' } })
-    }
-    return
-  }
-
-  if (req.method === 'POST' && path === '/api/v1/cloud/billing/stripe/webhook') {
-    const rawBody = await new Promise<string>((resolve, reject) => {
-      const chunks: Buffer[] = []
-      req.on('data', (chunk: Buffer) => chunks.push(chunk))
-      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
-      req.on('error', reject)
-    })
-
-    const signature = typeof req.headers['stripe-signature'] === 'string' ? req.headers['stripe-signature'] : ''
-    if (!signature) {
-      sendJson(res, 400, { error: { code: 'MISSING_SIGNATURE', message: 'Missing Stripe-Signature header.' } })
-      return
-    }
-
-    try {
-      const event = await constructStripeWebhookEvent(rawBody, signature)
-
-      if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as unknown as Record<string, unknown>
-        const topupResult = await confirmStripeTopup({
-          id: session.id as string,
-          metadata: (session.metadata || {}) as Record<string, string>,
-          amount_total: (session.amount_total as number | null) ?? null,
-          payment_status: (session.payment_status as string) || ''
-        })
-        if (!topupResult) {
-          sendJson(res, 200, { received: true, skipped: true })
-          return
-        }
-      }
-
-      sendJson(res, 200, { received: true })
+      const result = await fulfillLemonSqueezyEvent(event)
+      sendJson(res, 200, { received: true, outcome: result.outcome })
     } catch (error) {
       if (error instanceof HttpError) {
         sendJson(res, error.statusCode, { error: { code: error.code, message: error.message } })
@@ -2639,65 +2823,15 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     const user = await requireUser(req)
     const body = await parseBody(req)
     const projectId = typeof body.projectId === 'string' ? body.projectId : ''
-    // Dashboard may send amount as credits (500) or amountUsd (5)
-    let amountUsd = 0
-    if (typeof body.amountUsd === 'number' || body.amountUsd) {
-      amountUsd = Number(body.amountUsd)
-    } else if (typeof body.amount === 'number' || body.amount) {
-      const raw = Number(body.amount)
-      // treat values >= 100 as credits
-      amountUsd = raw >= 100 ? raw * TALOCODE_CLOUD_PRICING.creditUsdValue : raw
-    }
-    if (!projectId || !Number.isFinite(amountUsd) || amountUsd <= 0) {
-      throw new HttpError(422, 'VALIDATION_ERROR', 'projectId and amount (credits or amountUsd) are required.')
-    }
+    const packId = typeof body.packId === 'string' ? body.packId : ''
+    if (!projectId || !packId) throw new HttpError(422, 'VALIDATION_ERROR', 'projectId and packId are required.')
     await requireCloudProjectOwner(projectId, user.id)
-    const result = await createTopupIntent({
-      projectId,
-      amountUsd,
-      provider: (body.provider as string) || 'lemonsqueezy',
-    })
-    // Shape expected by dashboard
-    const topup = (result as { topup: { id: string; credits?: number; amountUsd?: number; status: string } }).topup
-    const ls = (result as { lemonsqueezy?: { checkoutUrl?: string }; checkoutUrl?: string }).lemonsqueezy
-    sendData(res, 201, {
-      topup: {
-        id: topup.id,
-        walletId: projectId,
-        amount: topup.credits ?? Math.floor(amountUsd / TALOCODE_CLOUD_PRICING.creditUsdValue),
-        status: topup.status,
-      },
-      checkoutUrl: ls?.checkoutUrl || (result as { checkoutUrl?: string }).checkoutUrl || null,
-      lemonsqueezy: ls || null,
-      stripePublishableKey: (result as { stripe?: { publishableKey?: string | null } }).stripe?.publishableKey || null,
-      clientSecret: (result as { stripe?: { clientSecret?: string | null } }).stripe?.clientSecret || null,
-      creditsPerDollar: (result as { creditsPerDollar?: number }).creditsPerDollar,
-    })
+    sendData(res, 201, await createPurchaseCheckout({ projectId, packId }))
     return
   }
 
   if (req.method === 'POST' && path === '/api/v1/cloud/billing/topup/confirm') {
-    const user = await requireUser(req)
-    const body = await parseBody(req)
-    const topupId = typeof body.topupId === 'string' ? body.topupId : ''
-    if (!topupId) throw new HttpError(422, 'VALIDATION_ERROR', 'topupId is required.')
-    const topup = await findTopupById(topupId)
-    if (!topup) throw new HttpError(404, 'TOPUP_NOT_FOUND', 'Top-up not found.')
-    const requestedProjectId = typeof body.projectId === 'string' ? body.projectId : topup.project_id
-    if (requestedProjectId !== topup.project_id) {
-      throw new HttpError(422, 'VALIDATION_ERROR', 'Top-up does not belong to the requested project.')
-    }
-    await requireCloudProjectOwner(topup.project_id, user.id)
-    // Production: only manual/dev confirm; real credits come from webhooks
-    if (process.env.NODE_ENV === 'production' && process.env.TALOCODE_ALLOW_MANUAL_TOPUPS !== 'true') {
-      throw new HttpError(403, 'MANUAL_DISABLED', 'Use Lemon Squeezy checkout; wallet is credited via webhook.')
-    }
-    const result = await confirmTopup(topupId, body.providerReference as string | undefined)
-    sendData(res, 200, {
-      topup: toCloudTopupResponse(result.topup),
-      wallet: toCloudWalletResponse(result.wallet),
-    })
-    return
+    throw new HttpError(410, 'LEGACY_TOPUP_DISABLED', 'Legacy top-up confirmation is disabled. Purchases are fulfilled by verified payment events.')
   }
 
   if (req.method === 'POST' && path === '/api/v1/customers') {
@@ -3448,9 +3582,9 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
       if (req.method === 'POST') {
         const body = await parseBody(req)
-        const amountUsd = typeof body.amountUsd === 'number' ? body.amountUsd : Number(body.amountUsd || 0)
-        if (!Number.isFinite(amountUsd) || amountUsd <= 0) throw new HttpError(422, 'VALIDATION_ERROR', 'amountUsd must be a positive number.')
-        const result = await createTopupIntent({ projectId: project.id, amountUsd, provider: body.provider as string | undefined })
+        const packId = typeof body.packId === 'string' ? body.packId : ''
+        if (!packId) throw new HttpError(422, 'VALIDATION_ERROR', 'packId is required.')
+        const result = await createPurchaseCheckout({ projectId: project.id, packId })
         sendData(res, 201, result)
         return
       }
@@ -3512,12 +3646,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (req.method === 'POST' && path === '/api/v1/cloud/topups/confirm') {
-    const body = await parseBody(req)
-    const topupId = typeof body.topupId === 'string' ? body.topupId : ''
-    if (!topupId) throw new HttpError(422, 'VALIDATION_ERROR', 'topupId is required.')
-    const result = await confirmTopup(topupId, body.providerReference as string | undefined)
-    sendData(res, 200, { topup: toCloudTopupResponse(result.topup), wallet: toCloudWalletResponse(result.wallet) })
-    return
+    throw new HttpError(410, 'LEGACY_TOPUP_DISABLED', 'Legacy top-up confirmation is disabled. Purchases are fulfilled by verified payment events.')
   }
 
   // ─── VideoLane (API-key authenticated) ────────────────────────
@@ -3574,7 +3703,11 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       }
 
       const { generateVideoPlan } = await import('./services/videolane.js')
-      const result = await generateVideoPlan({ prompt, style: body.style, duration: body.duration })
+      const result = await generateVideoPlan({
+        prompt,
+        style: body.style as 'tutorial' | 'demo' | 'explainer' | 'promo' | undefined,
+        duration: body.duration as 'short' | 'medium' | 'long' | undefined,
+      })
       if (!result.ok) throw new HttpError(422, 'VIDEOLANE_ERROR', result.error || 'Video plan generation failed.')
       sendData(res, 200, { ok: true, plan: result.plan, usage: { credits: chargeResult.event.credits, action: 'videolane.plan' } })
       return
@@ -3625,7 +3758,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       }
 
       const { generateMetadata } = await import('./services/videolane.js')
-      const result = await generateMetadata(title, body.outDir)
+      const result = await generateMetadata(title, body.outDir as string | undefined)
       sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'videolane.metadata' } })
       return
     }
@@ -3714,7 +3847,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
         try {
           const { readFile } = await import('./services/doculane.js')
-          const result = await readFile({ fileUrl, fileType })
+          const result = await readFile({ fileUrl, fileType: fileType as 'word' | 'excel' | 'powerpoint' })
           sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'doculane.read' } })
         } catch (error) {
           throw new HttpError(422, 'DOCULANE_ERROR', error instanceof Error ? error.message : 'Failed to read document.')
@@ -3746,7 +3879,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
         try {
           const { writeFile } = await import('./services/doculane.js')
-          const result = await writeFile({ fileType, content })
+          const result = await writeFile({ fileType: fileType as 'word' | 'excel' | 'powerpoint', content: content as Record<string, unknown> })
           sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'doculane.write' } })
         } catch (error) {
           throw new HttpError(422, 'DOCULANE_ERROR', error instanceof Error ? error.message : 'Failed to write document.')
@@ -3775,7 +3908,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
         try {
           const { getFileInfo } = await import('./services/doculane.js')
-          const result = await getFileInfo({ fileUrl, fileType })
+          const result = await getFileInfo({ fileUrl, fileType: fileType as 'word' | 'excel' | 'powerpoint' })
           sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'doculane.info' } })
         } catch (error) {
           throw new HttpError(422, 'DOCULANE_ERROR', error instanceof Error ? error.message : 'Failed to get document info.')
@@ -3806,7 +3939,12 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
         try {
           const { extractFromDocument } = await import('./services/doculane.js')
-          const result = await extractFromDocument({ documentUrl, prompt, format, schema })
+          const result = await extractFromDocument({
+            documentUrl,
+            prompt,
+            format: format as 'json' | 'text' | 'markdown',
+            schema: schema as Record<string, string> | undefined,
+          })
           sendData(res, 200, { ...result, usage: { credits: chargeResult.event.credits, action: 'doculane.extract' } })
         } catch (error) {
           throw new HttpError(422, 'DOCULANE_ERROR', error instanceof Error ? error.message : 'Failed to extract from document.')
@@ -3855,10 +3993,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       return
     }
 
-    const apiKey = await authenticateApiKey(req)
-    if (!apiKey) {
-      throw new HttpError(401, 'UNAUTHORIZED', 'Valid API key required.')
-    }
+    const apiKey = requireLocalApiKey(req)
 
     const customer = await getCustomer(apiKey.customerId)
     if (!customer) {
@@ -3866,10 +4001,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
     }
 
     if (req.method === 'POST' && path === '/v1/wiki/init') {
-      const chargeResult = await recordLocalUsageEvent(customer.id, 'wiki.init', 0)
-      if (!chargeResult) {
-        throw new HttpError(402, 'INSUFFICIENT_CREDITS', 'Not enough credits.')
-      }
+      recordLocalUsageEvent({ customerId: customer.id, product: 'wiki', action: 'wiki.init', units: 0 })
       sendJson(res, 200, { status: 'ok', message: 'Wiki structure initialized.', usage: { credits: 0, action: 'wiki.init' } })
       return
     }
@@ -3879,10 +4011,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       if (!body.source && !body.content) {
         throw new HttpError(400, 'VALIDATION_ERROR', 'source or content required.')
       }
-      const chargeResult = await recordLocalUsageEvent(customer.id, 'wiki.ingest', 5)
-      if (!chargeResult) {
-        throw new HttpError(402, 'INSUFFICIENT_CREDITS', 'Not enough credits.')
-      }
+      recordLocalUsageEvent({ customerId: customer.id, product: 'wiki', action: 'wiki.ingest', units: 5 })
       const result = { source: body.source || 'inline', pagesCreated: 1, linksCreated: 0, pages: ['extracted'] }
       sendData(res, 200, { ...result, usage: { credits: 5, action: 'wiki.ingest' } })
       return
@@ -3893,20 +4022,14 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       if (!body.question) {
         throw new HttpError(400, 'VALIDATION_ERROR', 'question required.')
       }
-      const chargeResult = await recordLocalUsageEvent(customer.id, 'wiki.query', 3)
-      if (!chargeResult) {
-        throw new HttpError(402, 'INSUFFICIENT_CREDITS', 'Not enough credits.')
-      }
+      recordLocalUsageEvent({ customerId: customer.id, product: 'wiki', action: 'wiki.query', units: 3 })
       const result = { answer: 'Query processed. Connect local wiki for full results.', sources: [] }
       sendData(res, 200, { ...result, usage: { credits: 3, action: 'wiki.query' } })
       return
     }
 
     if (req.method === 'POST' && path === '/v1/wiki/lint') {
-      const chargeResult = await recordLocalUsageEvent(customer.id, 'wiki.lint', 2)
-      if (!chargeResult) {
-        throw new HttpError(402, 'INSUFFICIENT_CREDITS', 'Not enough credits.')
-      }
+      recordLocalUsageEvent({ customerId: customer.id, product: 'wiki', action: 'wiki.lint', units: 2 })
       const result = { orphans: [], deadLinks: [], contradictions: [], staleClaims: [], stats: { pages: 0, links: 0, orphans: 0, deadLinks: 0, contradictions: 0 } }
       sendData(res, 200, { ...result, usage: { credits: 2, action: 'wiki.lint' } })
       return
@@ -3917,10 +4040,7 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       if (!body.title || !body.content) {
         throw new HttpError(400, 'VALIDATION_ERROR', 'title and content required.')
       }
-      const chargeResult = await recordLocalUsageEvent(customer.id, 'wiki.save', 2)
-      if (!chargeResult) {
-        throw new HttpError(402, 'INSUFFICIENT_CREDITS', 'Not enough credits.')
-      }
+      recordLocalUsageEvent({ customerId: customer.id, product: 'wiki', action: 'wiki.save', units: 2 })
       const result = { path: `conversation-${new Date().toISOString().split('T')[0]}` }
       sendData(res, 200, { ...result, usage: { credits: 2, action: 'wiki.save' } })
       return
